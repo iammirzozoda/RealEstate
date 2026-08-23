@@ -56,6 +56,12 @@
   --wash-sky-ink: #0369a1;
   --wash-violet: #ede9fe;
   --wash-violet-ink: #6d28d9;
+  /* The one fixed yellow, available in both modes and independent of the
+     company's hero theme -- for the handful of spots (BackLink's hover)
+     that want to read as "the Лимӯ accent" specifically, not "whatever
+     --brand currently is". --accent-dark (below, dark-mode only) is
+     defined in terms of this so there's one hex to change, not two. */
+  --accent-yellow: #facc15;
   --side-active-bg: #ffffff;
   --side-active-ink: #0f172a;
   --side-active-icon: var(--brand);
@@ -127,7 +133,7 @@
      .bg-brand/.btn-brand overrides further down -- for every primary
      button app-wide, so "yellow" reads as ONE consistent accent rather
      than several near-yellows. */
-  --accent-dark: #facc15;
+  --accent-dark: var(--accent-yellow);
 }
 
 /* Contract documents (standalone print page and the in-modal preview after

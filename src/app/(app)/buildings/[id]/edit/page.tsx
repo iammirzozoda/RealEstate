@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { BackLink } from "@/components/BackLink";
 import { SetupNotice } from "@/components/SetupNotice";
 import { BuildingForm } from "@/components/BuildingForm";
 import { FloorUnitsBuilder } from "@/components/FloorUnitsBuilder";
@@ -241,12 +241,7 @@ export default function EditBuildingPage() {
   if (!roleLoading && role !== "admin") {
     return (
       <div className="flex flex-col gap-3">
-        <Link
-          href={`/buildings/${params.id}`}
-          className="w-fit text-sm text-[var(--ink-4)] hover:text-[var(--ink-1)]"
-        >
-          ← {t.buildings.backToList}
-        </Link>
+        <BackLink href={`/buildings/${params.id}`}>{t.buildings.backToList}</BackLink>
         <p className="text-[var(--ink-4)]">{t.users.accessDenied}</p>
       </div>
     );
@@ -254,12 +249,7 @@ export default function EditBuildingPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link
-        href={`/buildings/${params.id}`}
-        className="w-fit text-sm text-[var(--ink-4)] hover:text-[var(--ink-1)]"
-      >
-        ← {t.buildings.backToList}
-      </Link>
+      <BackLink href={`/buildings/${params.id}`}>{t.buildings.backToList}</BackLink>
 
       {!configured && <SetupNotice />}
 
