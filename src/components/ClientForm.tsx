@@ -99,7 +99,7 @@ export function ClientForm({
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.clients.form.phone}</span>
           <input
@@ -130,7 +130,7 @@ export function ClientForm({
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.clients.form.passport}</span>
           <input
@@ -152,7 +152,7 @@ export function ClientForm({
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.clients.form.birthDate}</span>
           <input

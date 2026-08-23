@@ -116,7 +116,7 @@ export function ClientAutocomplete({
           />
         </label>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-[var(--ink-2)]">{t.clients.form.phone}</span>
             <input
@@ -136,7 +136,7 @@ export function ClientAutocomplete({
           </label>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-[var(--ink-2)]">
               {t.clients.form.passport} <span className="text-[var(--wash-rose-ink)]">*</span>
@@ -162,7 +162,7 @@ export function ClientAutocomplete({
           </label>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-[var(--ink-2)]">
               {t.clients.form.birthDate} <span className="text-[var(--wash-rose-ink)]">*</span>
@@ -251,7 +251,7 @@ export function ClientAutocomplete({
               ⚠ {t.contracts.form.missingRequiredClientFields}
             </p>
           )}
-          <div className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--border-c)] bg-[var(--surface-2)] p-3">
+          <div className="grid grid-cols-1 gap-2 rounded-xl border border-[var(--border-c)] bg-[var(--surface-2)] p-3 sm:grid-cols-2">
             <div className="flex flex-col gap-0.5">
               <span className="text-[11px] uppercase tracking-wide text-[var(--ink-5)]">
                 {t.clients.form.phone}

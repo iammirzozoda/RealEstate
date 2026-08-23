@@ -140,7 +140,7 @@ export function UnitEditModal({
   return (
     <Modal title={title} onClose={onClose} guardClose>
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <label className="flex flex-col gap-1 text-xs">
             <span className="font-medium text-[var(--ink-3)]">{t.buildings.hover.rooms}</span>
             <input

@@ -80,6 +80,7 @@ function UnitCell({
   roomsFilter,
   gapFilter,
   editMode,
+  openUpward = false,
 }: {
   unit: PropertyObject;
   apartmentNumber: number | undefined;
@@ -99,6 +100,13 @@ function UnitCell({
   roomsFilter: number | null;
   gapFilter: GapFilter;
   editMode: boolean;
+  // Near the bottom of the grid there aren't enough rows left below for the
+  // hover card to open into -- it used to be kept clear of the container's
+  // bottom edge with a permanent ~288px of blank padding under the whole
+  // grid instead, which read as a big dead gap even when nobody was
+  // hovering anything. Opening upward for the last few rows means that
+  // padding is no longer load-bearing and can shrink back down to nothing.
+  openUpward?: boolean;
 }) {
   const { t } = useLocale();
   const router = useRouter();
@@ -294,7 +302,11 @@ function UnitCell({
       {/* Anchored to the cell's LEFT edge, opening rightward -- so the card
           for a leftmost cell never extends left under the sidebar (where it
           used to get clipped and "disappear"). */}
-      <div className="pointer-events-none invisible absolute left-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[var(--border-c)] bg-[var(--surface-1)] text-xs shadow-xl group-hover:visible">
+      <div
+        className={`pointer-events-none invisible absolute left-0 z-40 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[var(--border-c)] bg-[var(--surface-1)] text-xs shadow-xl group-hover:visible ${
+          openUpward ? "bottom-full mb-2" : "top-full mt-2"
+        }`}
+      >
         <div className="flex items-start justify-between gap-2 px-3.5 pb-1.5 pt-3">
           <div>
             <p className="text-[15px] font-bold leading-tight text-[var(--ink-1)]">
@@ -537,15 +549,16 @@ export function ShakhmatkaGrid({
           its own vertical scrollbar right next to the page's. Pinning
           overflow-y to hidden keeps the horizontal scrolling the grid needs
           and removes the second bar for good.
-          The bottom padding is what now guarantees a bottom-row hover card is
-          fully visible, since the box can no longer scroll to reveal it.
-          Measured in the browser: the fullest card (price, paid, progress,
-          remaining, buyer, phone) is 217px, and 246px when a long Tajik name
-          wraps to a second line -- 254px with its 8px offset. pb-56 was 224px,
-          i.e. already too short; pb-72 is 288px and clears the worst case with
-          room to spare. */}
+          Used to also carry a permanent pb-72 (288px) here so a bottom-row
+          hover card always had room to open into -- but that meant 288px of
+          plain empty space under the grid at all times, hover or not, which
+          read as a big broken gap especially on a shorter tablet screen.
+          Now the last few rows flip their card upward instead (see
+          `openUpward` on UnitCell), so every downward-opening card always
+          has real rows below it to render over, and this padding only needs
+          to cover ordinary breathing room, not a worst-case card height. */}
       <div className="overflow-x-auto overflow-y-hidden">
-        <div className="flex w-fit flex-col gap-2 pb-72">
+        <div className="flex w-fit flex-col gap-2 pb-2">
           {hasBlocks && (
             <div className="flex items-center gap-3">
               <span className="w-16 shrink-0" />
@@ -563,7 +576,12 @@ export function ShakhmatkaGrid({
             </div>
           )}
 
-          {floors.map((floor) => (
+          {floors.map((floor, floorIndex) => {
+            // The hover card is up to ~260px tall (roughly 4 rows) -- any
+            // row with fewer than 4 rows left below it flips its card
+            // upward instead, so it always has somewhere to render into.
+            const openUpward = floorIndex >= floors.length - 4;
+            return (
             <div key={floor} className="flex items-center gap-3">
               <span className="w-16 shrink-0 text-xs font-medium text-[var(--ink-4)]">
                 {t.buildings.floorLabel} {floor}
@@ -602,6 +620,7 @@ export function ShakhmatkaGrid({
                             roomsFilter={roomsFilter}
                             gapFilter={gapFilter}
                             editMode={editMode}
+                            openUpward={openUpward}
                           />
                         ) : canEditSold ? (
                           <button
@@ -625,7 +644,8 @@ export function ShakhmatkaGrid({
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

@@ -81,7 +81,7 @@ export function QuickAddUnitModal({
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-[var(--ink-2)]">{t.objects.form.type}</span>
             <select
@@ -108,7 +108,7 @@ export function QuickAddUnitModal({
           </label>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-[var(--ink-2)]">{t.objects.form.area}</span>
             <input

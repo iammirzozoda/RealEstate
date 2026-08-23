@@ -239,8 +239,8 @@ export default function UsersPage() {
       {loading ? (
         <p className="text-[var(--ink-5)]">{t.common.loading}</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--border-c)] bg-[var(--surface-1)] shadow-sm">
-          <table className="w-full border-collapse text-left text-sm">
+        <div className="overflow-x-auto rounded-xl border border-[var(--border-c)] bg-[var(--surface-1)] shadow-sm">
+          <table className="w-full min-w-[520px] border-collapse text-left text-sm">
             <thead className="border-b border-[var(--border-c)] text-[var(--ink-4)]">
               <tr>
                 <th className="px-4 py-3 font-medium">{t.users.email}</th>

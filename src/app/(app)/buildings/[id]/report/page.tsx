@@ -274,7 +274,7 @@ export default function BuildingReportPage() {
         {building.address && <p className="text-[11px] text-slate-500">{building.address}</p>}
 
         {/* Summary tiles */}
-        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {[
             { label: t.dashboard.totalObjects, value: String(units.length) },
             { label: t.objects.statuses.sold, value: String(stats.counts.sold) },
@@ -348,7 +348,8 @@ export default function BuildingReportPage() {
         >
           {t.buildings.report.units}
         </h2>
-        <table className="mt-2 w-full border-collapse text-[10px]">
+        <div className="overflow-x-auto">
+        <table className="mt-2 w-full min-w-[640px] border-collapse text-[10px]">
           <thead>
             <tr style={{ background: "#faf6fc" }}>
               <th className={th}>№</th>
@@ -389,6 +390,7 @@ export default function BuildingReportPage() {
               })}
           </tbody>
         </table>
+        </div>
 
         {/* Clients */}
         {clientsList.length > 0 && (
@@ -396,6 +398,7 @@ export default function BuildingReportPage() {
             <h2 className="mt-5 text-[13px] font-bold uppercase tracking-wide" style={{ color: PLUM }}>
               {t.buildings.report.clients} ({clientsList.length})
             </h2>
+            <div className="overflow-x-auto">
             <table className="mt-2 w-full border-collapse text-[10px]">
               <thead>
                 <tr style={{ background: "#faf6fc" }}>
@@ -414,6 +417,7 @@ export default function BuildingReportPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         )}
 
@@ -423,6 +427,7 @@ export default function BuildingReportPage() {
             <h2 className="mt-5 text-[13px] font-bold uppercase tracking-wide" style={{ color: PLUM }}>
               {t.buildings.report.managers}
             </h2>
+            <div className="overflow-x-auto">
             <table className="mt-2 w-full border-collapse text-[10px]">
               <thead>
                 <tr style={{ background: "#faf6fc" }}>
@@ -441,6 +446,7 @@ export default function BuildingReportPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         )}
 
@@ -453,6 +459,7 @@ export default function BuildingReportPage() {
             >
               {t.buildings.report.payments} ({payments.length})
             </h2>
+            <div className="overflow-x-auto">
             <table className="mt-2 w-full border-collapse text-[10px]">
               <thead>
                 <tr style={{ background: "#faf6fc" }}>
@@ -475,6 +482,7 @@ export default function BuildingReportPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         )}
 

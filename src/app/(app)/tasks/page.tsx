@@ -99,7 +99,7 @@ export default function TasksPage() {
         </ControlGroup>
       </div>
 
-      <div className="animate-fade-up overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)]">
+      <div className="animate-fade-up hidden overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] sm:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border-c)] text-[var(--ink-4)]">
             <tr>
@@ -165,6 +165,62 @@ export default function TasksPage() {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="animate-fade-up flex flex-col gap-2 sm:hidden">
+        {loading && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-6 text-center text-sm text-[var(--ink-5)]">
+            {t.common.loading}
+          </p>
+        )}
+        {!loading && tasks.length === 0 && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-6 text-center text-sm text-[var(--ink-5)]">
+            {t.tasks.empty}
+          </p>
+        )}
+        {tasks.map((task) => {
+          const today = new Date().toISOString().slice(0, 10);
+          const soonDate = new Date();
+          soonDate.setDate(soonDate.getDate() + 3);
+          const soon = soonDate.toISOString().slice(0, 10);
+          const overdue = task.status !== "done" && !!task.due_date && task.due_date < today;
+          const dueSoon =
+            task.status !== "done" &&
+            !!task.due_date &&
+            task.due_date >= today &&
+            task.due_date <= soon;
+
+          return (
+            <Link
+              key={task.id}
+              href={`/tasks/${task.id}`}
+              className="flex flex-col gap-2 rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] p-3.5 transition-colors active:bg-[var(--hover-c)]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-medium text-[var(--ink-1)]">{task.title}</span>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${TASK_STATUS_COLORS[task.status]}`}
+                >
+                  {t.tasks.statuses[task.status]}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span
+                  className={
+                    overdue
+                      ? "font-medium text-[var(--wash-rose-ink)]"
+                      : dueSoon
+                        ? "font-medium text-[var(--wash-amber-ink)]"
+                        : "text-[var(--ink-3)]"
+                  }
+                >
+                  {task.due_date || "—"}
+                </span>
+                <span className="text-[var(--ink-4)]">{task.assignee || "—"}</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />

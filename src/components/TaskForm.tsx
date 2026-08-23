@@ -86,7 +86,7 @@ export function TaskForm({
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.tasks.form.dueDate}</span>
           {/* A deadline may be in the future, so this window allows it -- but
@@ -125,7 +125,7 @@ export function TaskForm({
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.tasks.form.assignee}</span>
           <input
@@ -145,7 +145,7 @@ export function TaskForm({
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.tasks.form.client}</span>
           <select

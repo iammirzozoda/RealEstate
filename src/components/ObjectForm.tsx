@@ -75,7 +75,7 @@ export function ObjectForm({
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.objects.form.type}</span>
           <select
@@ -106,7 +106,7 @@ export function ObjectForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.objects.form.rooms}</span>
           <input
@@ -130,7 +130,7 @@ export function ObjectForm({
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-[var(--ink-2)]">{t.objects.form.price}</span>
           <div className="flex gap-2">

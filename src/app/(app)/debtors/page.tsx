@@ -426,7 +426,7 @@ export default function DebtorsPage() {
         </div>
       )}
 
-      <div className="animate-fade-up overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)]">
+      <div className="animate-fade-up hidden overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] sm:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border-c)] text-[var(--ink-4)]">
             <tr>
@@ -521,6 +521,84 @@ export default function DebtorsPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="animate-fade-up flex flex-col gap-2 sm:hidden">
+        {loading && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-6 text-center text-sm text-[var(--ink-5)]">
+            {t.common.loading}
+          </p>
+        )}
+        {!loading && rows.length === 0 && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-8 text-center text-sm text-[var(--wash-emerald-ink)]">
+            {t.debtors.empty}
+          </p>
+        )}
+        {rows.map((r) => (
+          <div
+            key={r.contractId}
+            className="flex flex-col gap-2.5 rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] p-3.5"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                {r.clientId ? (
+                  <Link
+                    href={`/clients/${r.clientId}`}
+                    className="-mx-1 block rounded px-1 font-medium text-[var(--ink-1)] transition-colors hover:bg-[var(--wash-plum)] hover:text-brand"
+                  >
+                    {r.clientName}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-[var(--ink-1)]">{r.clientName}</span>
+                )}
+                {r.clientPhone && (
+                  <div className="text-xs text-[var(--ink-5)]">{r.clientPhone}</div>
+                )}
+              </div>
+              <span className="shrink-0 text-right text-xs text-[var(--ink-4)]">
+                {r.objectName ?? "—"}
+              </span>
+            </div>
+
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs text-[var(--ink-5)]">
+                  {formatShortDate(r.earliestDue)} · {r.daysOverdue} {t.debtors.days}
+                </p>
+                <p className="font-semibold text-[var(--wash-rose-ink)]">
+                  {formatCurrency(r.totalOverdue, r.currency)}
+                </p>
+                <p className="text-xs text-[var(--ink-5)]">
+                  {r.missedCount}{" "}
+                  {r.missedCount === 1 ? t.debtors.missedOne : t.debtors.missedPayments}
+                  {" · "}
+                  {t.debtors.remainingCol}: {formatCurrency(r.remainingTotal, r.currency)}
+                </p>
+              </div>
+              {r.clientPhone ? (
+                <a
+                  href={waLink(
+                    r.clientPhone,
+                    t.debtors.reminderMsg
+                      .replace("{name}", r.clientName)
+                      .replace("{contract}", r.contractNumber ?? "—")
+                      .replace("{amount}", formatCurrency(r.totalOverdue, r.currency))
+                      .replace("{days}", String(r.daysOverdue))
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={t.debtors.whatsapp}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--wash-emerald-border)] px-2.5 py-1.5 text-xs font-semibold text-[var(--wash-emerald-ink)] transition-all active:scale-95"
+                >
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1a13 13 0 0 1-1.5-.5c-2.6-1.1-4.3-3.7-4.4-3.9-.1-.2-1-1.4-1-2.6s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.9 2.1c0 .2.1.3 0 .5l-.3.5-.4.5c-.2.1-.3.3-.1.6.1.3.7 1.1 1.4 1.8.9.9 1.7 1.1 2 1.3.2.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l2 .9c.2.1.4.2.4.3.1.1.1.6-.1 1.1Z" /></svg>
+                  {t.debtors.whatsapp}
+                </a>
+              ) : (
+                <span className="shrink-0 text-xs text-[var(--ink-5)]">{t.debtors.noPhone}</span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />

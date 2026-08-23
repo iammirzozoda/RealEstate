@@ -205,7 +205,7 @@ export default function ObjectsPage() {
         </ControlGroup>
       </div>
 
-      <div className="animate-fade-up overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)]">
+      <div className="animate-fade-up hidden overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] sm:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border-c)] text-[var(--ink-4)]">
             <tr>
@@ -302,6 +302,73 @@ export default function ObjectsPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="animate-fade-up flex flex-col gap-2 sm:hidden">
+        {loading && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-6 text-center text-sm text-[var(--ink-5)]">
+            {t.common.loading}
+          </p>
+        )}
+        {empty && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-6 text-center text-sm text-[var(--ink-5)]">
+            {t.objects.empty}
+          </p>
+        )}
+        {filteredBuildings.map((building) => {
+          const s = buildingStats[building.id];
+          const sold = !!s && s.total > 0 && s.available === 0;
+          return (
+            <Link
+              key={`building-${building.id}`}
+              href={`/buildings/${building.id}`}
+              className="flex flex-col gap-1.5 rounded-lg border border-[var(--border-c)] bg-[var(--surface-2)] p-3.5 transition-colors active:bg-[var(--hover-c2)]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-medium text-[var(--ink-1)]">{building.name}</span>
+                {s && s.total > 0 && (
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      sold ? STATUS_COLORS.sold : STATUS_COLORS.available
+                    }`}
+                  >
+                    {sold ? t.objects.buildingSoldOut : `${t.objects.buildingInSale} · ${s.available}`}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--ink-4)]">{building.address || "—"}</p>
+              <div className="flex items-center justify-between gap-2 text-xs text-[var(--ink-3)]">
+                <span>{s?.availableArea ? formatArea(s.availableArea) : "—"}</span>
+                <span>
+                  {building.price_per_sqm
+                    ? `${formatCurrency(building.price_per_sqm, "TJS")}/м²`
+                    : "—"}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+        {objects.map((obj) => (
+          <Link
+            key={obj.id}
+            href={`/objects/${obj.id}`}
+            className="flex flex-col gap-1.5 rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] p-3.5 transition-colors active:bg-[var(--hover-c)]"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-medium text-[var(--ink-1)]">{obj.name}</span>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[obj.status]}`}
+              >
+                {t.objects.statuses[obj.status]}
+              </span>
+            </div>
+            <p className="text-xs text-[var(--ink-4)]">{obj.address || "—"}</p>
+            <div className="flex items-center justify-between gap-2 text-xs text-[var(--ink-3)]">
+              <span>{t.objects.types[obj.type]} · {formatArea(obj.area)}</span>
+              <span>{formatCurrency(obj.price, obj.currency)}</span>
+            </div>
+          </Link>
+        ))}
       </div>
 
       <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />

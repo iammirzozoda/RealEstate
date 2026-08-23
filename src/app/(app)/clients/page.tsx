@@ -372,7 +372,13 @@ export default function ClientsPage() {
         </ControlGroup>
       </div>
 
-      <div className="animate-fade-up overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)]">
+      {/* Table from tablet width up; below that a table just gets narrower
+          columns squeezed to fit, not actually readable without scrolling
+          sideways to see the rest of a row -- so on phone this becomes a
+          stack of cards instead, same four facts per client, one under the
+          other rather than side by side. No second data-fetch: both views
+          read the same clients/debts/units state, only the markup differs. */}
+      <div className="animate-fade-up hidden overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] sm:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border-c)] text-[var(--ink-4)]">
             <tr>
@@ -422,6 +428,37 @@ export default function ClientsPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="animate-fade-up flex flex-col gap-2 sm:hidden">
+        {loading && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-6 text-center text-sm text-[var(--ink-5)]">
+            {t.common.loading}
+          </p>
+        )}
+        {!loading && clients.length === 0 && (
+          <p className="rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-6 text-center text-sm text-[var(--ink-5)]">
+            {t.clients.empty}
+          </p>
+        )}
+        {clients.map((client) => (
+          <Link
+            key={client.id}
+            href={`/clients/${client.id}`}
+            className="flex flex-col gap-2 rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] p-3.5 transition-colors active:bg-[var(--hover-c)]"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-medium text-[var(--ink-1)]">{client.name}</span>
+              <span className="shrink-0 text-sm text-[var(--ink-3)]">{client.phone || "—"}</span>
+            </div>
+            <div className="flex items-end justify-between gap-3">
+              <UnitCell units={units[client.id]} />
+              <div className="w-32 shrink-0">
+                <DebtBar debt={debts[client.id]} />
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
 
       <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />

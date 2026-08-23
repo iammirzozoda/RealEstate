@@ -315,7 +315,7 @@ export function ContractForm({
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
         <ClientAutocomplete
           clients={clients}
           value={values.client_id}
@@ -494,7 +494,7 @@ export function ContractForm({
         </div>
       )}
 
-      <div className={`grid gap-4 ${lockedObject ? "grid-cols-1" : "grid-cols-2"}`}>
+      <div className={`grid grid-cols-1 gap-4 ${lockedObject ? "" : "sm:grid-cols-2"}`}>
         {!lockedObject && (
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-slate-700">{t.contracts.form.status}</span>
@@ -531,7 +531,7 @@ export function ContractForm({
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-slate-700">{t.contracts.form.paymentType}</span>
           <select

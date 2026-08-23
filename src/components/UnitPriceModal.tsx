@@ -93,7 +93,7 @@ export function UnitPriceModal({
   return (
     <Modal onClose={onClose} title={`${t.buildings.unitPrice.title} · ${unitName}`}>
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs">
             <span className="font-semibold text-[var(--ink-3)]">{t.buildings.unitPrice.area}</span>
             <input
