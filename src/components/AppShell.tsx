@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // until an admin grants them a role.
   if (!roleLoading && role === "none") {
     return (
-      <div className="hero-gradient flex min-h-screen w-full items-center justify-center p-6 text-white">
+      <div className="hero-gradient hero-panel flex min-h-screen w-full items-center justify-center p-6 text-white">
         <div className="w-full max-w-md rounded-2xl bg-white/10 p-8 text-center backdrop-blur-sm">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/15">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
@@ -127,7 +127,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // all of it -- a fixed-height scroll container clips a printed
     // document to one viewport worth of content.
     <div className="flex h-screen w-full overflow-hidden print:block print:h-auto print:overflow-visible">
-      <aside className="app-sidebar hero-gradient relative hidden h-full w-60 shrink-0 overflow-y-auto sm:flex sm:flex-col print:hidden">
+      <aside className="app-sidebar hero-gradient hero-panel relative hidden h-full w-60 shrink-0 overflow-y-auto sm:flex sm:flex-col print:hidden">
         {/* Same slow-drifting glow language as the hero, so the sidebar
             belongs to the same living surface. Dark mode drops it -- see
             .app-sidebar in globals.css -- since the sidebar there is flat

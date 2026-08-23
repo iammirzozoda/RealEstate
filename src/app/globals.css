@@ -232,6 +232,13 @@
 .btn-brand {
   background-image: linear-gradient(to right, var(--brand-strong), var(--brand));
 }
+/* Лимӯ asked to be flat everywhere, not just motion-free -- this two-tone
+   blend is subtle (both stops are graphite) but it is still a gradient,
+   so it goes solid here too, same as .hero-gradient below. */
+:root[data-hero-theme="lemon"] .btn-brand {
+  background-image: none;
+  background-color: var(--brand);
+}
 .bg-brand { background-color: var(--brand); }
 .bg-brand-strong { background-color: var(--brand-strong); }
 .text-brand { color: var(--brand); }
@@ -321,6 +328,33 @@
 :root[data-hero-theme="lemon"] .animate-hero-glow,
 :root[data-hero-theme="lemon"] .animate-hero-glow-2 {
   display: none;
+}
+
+/* Лимӯ, flattened: no motion was only half of "static" -- the gradient
+   itself (graphite → grey → lemon, diagonal) was still a blend, just a
+   still one. This drops it to one flat fill (the darkest stop) on every
+   .hero-gradient surface at once -- sidebar, dashboard hero, PIN screen,
+   the "waiting for access" screen, building-card placeholders, client
+   avatars -- rather than only the couple of "big" spots someone might
+   think to fix by hand.
+   The lemon then earns its keep as one deliberate mark instead of a
+   background ingredient: a 3px rule along the top edge of the surfaces
+   big enough for it to read as a line rather than a smear. Opt-in via
+   .hero-panel (sidebar, dashboard hero, PIN screen, waiting-for-access)
+   rather than blanket on .hero-gradient, so a 24px avatar or a building
+   placeholder icon doesn't get a rule as thick as it is tall. */
+:root[data-hero-theme="lemon"] .hero-gradient {
+  background: var(--hero-1);
+}
+:root[data-hero-theme="lemon"] .hero-panel {
+  border-top: 3px solid var(--hero-3);
+}
+/* Same flattening for the login card's own top accent bar -- it isn't a
+   .hero-gradient surface (it lives on the white card, not the themed
+   panel), so it needed its own rule to stop blending graphite into lemon. */
+:root[data-hero-theme="lemon"] .card-accent-bar {
+  background-image: none;
+  background-color: var(--hero-3);
 }
 
 /* ---- Hero ornament overlay ----

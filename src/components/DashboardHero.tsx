@@ -74,7 +74,7 @@ export function DashboardHero({
   ];
 
   return (
-    <div className="hero-gradient hero-surface relative overflow-hidden rounded-2xl px-6 py-8 text-white shadow-lg shadow-slate-900/10 sm:px-10 sm:py-10">
+    <div className="hero-gradient hero-surface hero-panel relative overflow-hidden rounded-2xl px-6 py-8 text-white shadow-lg shadow-slate-900/10 sm:px-10 sm:py-10">
       {/* Mountain skyline signature, low-opacity so it stays atmosphere, not decoration. */}
       <svg
         viewBox="0 0 1000 200"

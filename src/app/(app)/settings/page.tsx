@@ -531,7 +531,15 @@ export default function SettingsPage() {
                   <span
                     className="h-5 w-5 rounded-full"
                     style={{
-                      background: `linear-gradient(120deg, ${th.swatch[0]}, ${th.swatch[1]} 55%, ${th.swatch[2]})`,
+                      // Лимӯ is flat now, not a blend -- a real gradient
+                      // swatch here would misrepresent it. Hard colour
+                      // stops (no space between them) give two solid
+                      // bands instead: a thin lemon rule over graphite,
+                      // the same shape the real surfaces use.
+                      background:
+                        th.id === "lemon"
+                          ? `linear-gradient(180deg, ${th.swatch[2]} 0%, ${th.swatch[2]} 15%, ${th.swatch[0]} 15%, ${th.swatch[0]} 100%)`
+                          : `linear-gradient(120deg, ${th.swatch[0]}, ${th.swatch[1]} 55%, ${th.swatch[2]})`,
                     }}
                   />
                   {th.label}

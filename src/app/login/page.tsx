@@ -110,7 +110,7 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="relative flex w-full max-w-sm flex-col gap-4 overflow-hidden rounded-2xl border border-white/40 bg-white/90 p-7 shadow-2xl shadow-slate-900/30 backdrop-blur-md"
       >
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--brand-strong)] via-[var(--brand)] to-[var(--hero-3)]" />
+        <div className="card-accent-bar absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--brand-strong)] via-[var(--brand)] to-[var(--hero-3)]" />
         {/* Language first: the person picking РУ/ТҶ hasn't logged in yet,
             so the login page itself must offer the choice. */}
         <div className="flex items-start justify-between gap-3">

@@ -161,7 +161,7 @@ export function PinLock() {
   const keypad = (d: string) => setDigits(entry + d);
 
   return (
-    <div className="hero-gradient fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 p-6 text-white">
+    <div className="hero-gradient hero-panel fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 p-6 text-white">
       <div className="flex flex-col items-center gap-2">
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
