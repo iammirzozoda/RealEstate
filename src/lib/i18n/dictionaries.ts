@@ -822,11 +822,23 @@ export const dictionaries = {
       actionCreate: "Создание",
       actionUpdate: "Изменение",
       actionDelete: "Удаление",
+      // Synthetic entries the SMS cron writes itself (see
+      // sendPaymentReminders.ts / send-task-reminders route) for a
+      // reminder it did NOT send -- no phone on file, or the gateway
+      // rejected it. Neither is a row change the generic audit trigger
+      // would ever see (the payment/task row is only touched on a
+      // successful send), so without these two the log stayed silent
+      // about exactly the cases someone would want to know about.
+      actionSmsSkipped: "Не отправлено",
+      actionSmsFailed: "Ошибка отправки",
+      reasonNoPhone: "нет номера телефона",
+      reasonGatewayError: "шлюз отклонил",
       entityTypes: {
         client: "Клиент",
         contract: "Договор",
         contract_payment: "Платёж",
         object: "Квартира",
+        task: "Задача",
       },
       unknownActor: "Неизвестно",
       yes: "Да",
@@ -859,6 +871,7 @@ export const dictionaries = {
         paid: "Оплачен",
         paid_date: "Дата оплаты",
         reminder_sent_at: "Напоминание отправлено",
+        due_reminder_sent_at: "Напоминание в день платежа отправлено",
         price: "Цена",
         area: "Площадь",
         rooms: "Комнат",
@@ -867,6 +880,8 @@ export const dictionaries = {
         type: "Тип",
         manual_reserved: "Ручная бронь",
         description: "Описание",
+        title: "Название",
+        assignee: "Исполнитель",
       },
     },
     password: {
@@ -1744,11 +1759,16 @@ export const dictionaries = {
       actionCreate: "Сохтан",
       actionUpdate: "Тағирдиҳӣ",
       actionDelete: "Нест кардан",
+      actionSmsSkipped: "Фиристода нашуд",
+      actionSmsFailed: "Хатои фиристодан",
+      reasonNoPhone: "рақами телефон нест",
+      reasonGatewayError: "шлюз рад кард",
       entityTypes: {
         client: "Мизоҷ",
         contract: "Шартнома",
         contract_payment: "Пардохт",
         object: "Хона",
+        task: "Супориш",
       },
       unknownActor: "Номаълум",
       yes: "Ҳа",
@@ -1776,6 +1796,7 @@ export const dictionaries = {
         paid: "Пардохт шудааст",
         paid_date: "Санаи пардохт",
         reminder_sent_at: "Хотиррасонӣ фиристода шуд",
+        due_reminder_sent_at: "Хотиррасонии рӯзи пардохт фиристода шуд",
         price: "Нарх",
         area: "Масоҳат",
         rooms: "Ҳуҷра",
@@ -1784,6 +1805,8 @@ export const dictionaries = {
         type: "Навъ",
         manual_reserved: "Бандубасти дастӣ",
         description: "Тавсиф",
+        title: "Ном",
+        assignee: "Иҷрокунанда",
       },
     },
     password: {

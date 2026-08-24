@@ -66,7 +66,24 @@ const HIDDEN_FIELDS = new Set([
   "plan_url",
   "amount_words",
   "_context",
+  // Rendered as the dedicated reason line below instead (see reasonLine),
+  // not as an ordinary "field: value" row -- "reason: no_phone" read like
+  // database internals leaking through, not an explanation.
+  "reason",
+  "detail",
 ]);
+
+// "Не отправлено: нет номера телефона" / "Ошибка отправки: 401: ..." --
+// the one line that actually answers "why didn't this reminder go out",
+// for the two synthetic actions the SMS cron writes when it decides not
+// to send (see sendPaymentReminders.ts / send-task-reminders route).
+function reasonLine(entry: AuditEntry, t: Dictionary): string | null {
+  const reason = entry.details?.reason;
+  if (reason !== "no_phone" && reason !== "gateway_error") return null;
+  const why = reason === "no_phone" ? t.auditLog.reasonNoPhone : t.auditLog.reasonGatewayError;
+  const detail = entry.details?.detail;
+  return typeof detail === "string" && detail ? `${why} (${detail})` : why;
+}
 
 function isDiffPair(v: unknown): v is { old: unknown; new: unknown } {
   return !!v && typeof v === "object" && !Array.isArray(v) && "old" in v && "new" in v;
@@ -122,13 +139,38 @@ function fieldLines(
 }
 
 // The DB trigger writes 'insert'; keep 'create' too so older rows (or a
-// future rename) render the same.
+// future rename) render the same. sms_skipped/sms_failed are written
+// straight from app code (not the trigger) for a reminder the SMS cron
+// decided not to send -- see sendPaymentReminders.ts.
 const ACTION_STYLES: Record<string, string> = {
   insert: "bg-[var(--wash-emerald)] text-[var(--wash-emerald-ink)]",
   create: "bg-[var(--wash-emerald)] text-[var(--wash-emerald-ink)]",
   update: "bg-[var(--wash-sky)] text-[var(--wash-sky-ink)]",
   delete: "bg-[var(--wash-rose)] text-[var(--wash-rose-ink)]",
+  sms_skipped: "bg-[var(--wash-amber)] text-[var(--wash-amber-ink)]",
+  sms_failed: "bg-[var(--wash-rose)] text-[var(--wash-rose-ink)]",
 };
+
+// Was a create/update/else ternary -- "else" silently meant "delete",
+// which was fine while those were the only three actions but would have
+// mislabelled sms_skipped/sms_failed as "Удаление" the moment they
+// showed up. Explicit per-action lookup instead of a chain that assumes
+// what's left over.
+function actionLabel(action: string, t: Dictionary): string {
+  switch (action) {
+    case "create":
+    case "insert":
+      return t.auditLog.actionCreate;
+    case "update":
+      return t.auditLog.actionUpdate;
+    case "sms_skipped":
+      return t.auditLog.actionSmsSkipped;
+    case "sms_failed":
+      return t.auditLog.actionSmsFailed;
+    default:
+      return t.auditLog.actionDelete;
+  }
+}
 
 export default function AuditLogPage() {
   const { t } = useLocale();
@@ -227,6 +269,7 @@ export default function AuditLogPage() {
                 // squeezed into one.
                 const where = contextLine(entry.details);
                 const lines = fieldLines(entry.details, t);
+                const reason = reasonLine(entry, t);
                 return (
                   <tr key={entry.id} className="border-b border-[var(--border-c2)] last:border-0 align-top">
                     <td className="px-4 py-3 whitespace-nowrap text-[var(--ink-3)]">
@@ -241,18 +284,21 @@ export default function AuditLogPage() {
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${ACTION_STYLES[entry.action] ?? "bg-[var(--wash-slate)] text-[var(--wash-slate-ink)]"}`}
                       >
-                        {entry.action === "create" || entry.action === "insert"
-                          ? t.auditLog.actionCreate
-                          : entry.action === "update"
-                            ? t.auditLog.actionUpdate
-                            : t.auditLog.actionDelete}
+                        {actionLabel(entry.action, t)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-[var(--ink-2)]">{entityLabel}</td>
                     <td className="px-4 py-3">
-                      {where || lines.length > 0 ? (
+                      {where || lines.length > 0 || reason ? (
                         <div className="flex flex-col gap-1">
                           {where && <p className="font-medium text-[var(--ink-2)]">{where}</p>}
+                          {reason && (
+                            <p
+                              className={`text-xs font-medium ${entry.action === "sms_skipped" ? "text-[var(--wash-amber-ink)]" : "text-[var(--wash-rose-ink)]"}`}
+                            >
+                              {reason}
+                            </p>
+                          )}
                           {lines.length > 0 && (
                             <ul className="flex flex-col gap-0.5">
                               {lines.map((l) => (

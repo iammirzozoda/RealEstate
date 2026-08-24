@@ -196,6 +196,11 @@ export async function sendPaymentReminders(
         smsGatewayPhone(payment.contract.client?.phone2);
       if (!phone) {
         skipped++;
+        await logReminderIssue(supabase, payment.id, "no_phone", {
+          client_name: payment.contract.client?.name,
+          contract_number: payment.contract.number,
+          currency: payment.contract.currency,
+        });
         continue;
       }
 
@@ -211,6 +216,17 @@ export async function sendPaymentReminders(
       if (!sent.ok) {
         failed++;
         if (!firstError && sent.detail) firstError = sent.detail;
+        await logReminderIssue(
+          supabase,
+          payment.id,
+          "gateway_error",
+          {
+            client_name: payment.contract.client?.name,
+            contract_number: payment.contract.number,
+            currency: payment.contract.currency,
+          },
+          sent.detail
+        );
         continue;
       }
       await supabase
@@ -228,6 +244,39 @@ export async function sendPaymentReminders(
     (skipped ? `, пропущено: ${skipped}` : "");
 
   return { ok: failed === 0, summary, advanceSent, dueSent, failed, skipped };
+}
+
+// A row the reminder loop below decided NOT to send is otherwise invisible
+// in the journal: the generic audit trigger only ever sees a row change,
+// and neither a missing phone nor a gateway rejection touches the payment
+// row at all -- skipped++/failed++ counted it for the run summary, but an
+// admin looking at Журнал событий for "why didn't Х get reminded" found
+// nothing. Written straight to audit_log (the cron runs on the service
+// role, which bypasses RLS same as every other write here) with the same
+// entity_type the real payment updates use, so it sorts into the journal
+// next to them instead of needing a separate place to look.
+async function logReminderIssue(
+  supabase: ServiceClient,
+  paymentId: string,
+  reason: "no_phone" | "gateway_error",
+  context: { client_name?: string; contract_number?: string | null; currency?: string },
+  detail?: string
+) {
+  await supabase.from("audit_log").insert({
+    actor_id: null,
+    action: reason === "no_phone" ? "sms_skipped" : "sms_failed",
+    entity_type: "contract_payment",
+    entity_id: paymentId,
+    details: {
+      _context: {
+        client_name: context.client_name,
+        contract_number: context.contract_number ?? undefined,
+        currency: context.currency,
+      },
+      reason,
+      ...(detail ? { detail } : {}),
+    },
+  });
 }
 
 /** Stamps the run onto settings so the UI can show that it is alive. */

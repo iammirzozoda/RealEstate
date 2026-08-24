@@ -58,13 +58,35 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // A row this loop decides not to send for is otherwise invisible in
+  // Журнал событий: the generic audit trigger only sees a row change, and
+  // neither a malformed phone nor a gateway rejection touches the task row
+  // at all. Written straight to audit_log (this route runs on the service
+  // role, same as the payment-reminder cron -- see its own note on this).
+  const logIssue = (task: DueTask, reason: "no_phone" | "gateway_error", detail?: string) =>
+    supabase.from("audit_log").insert({
+      actor_id: null,
+      action: reason === "no_phone" ? "sms_skipped" : "sms_failed",
+      entity_type: "task",
+      entity_id: task.id,
+      details: {
+        reason,
+        title: task.title,
+        assignee: task.assignee ?? undefined,
+        ...(detail ? { detail } : {}),
+      },
+    });
+
   const dueList = (tasks ?? []) as DueTask[];
   let sent = 0;
   let failed = 0;
 
   for (const task of dueList) {
     const phone = smsGatewayPhone(task.assignee_phone);
-    if (!phone) continue;
+    if (!phone) {
+      await logIssue(task, "no_phone");
+      continue;
+    }
 
     const text = renderContractTemplate(settings.sms_task_template || DEFAULT_TASK_TEMPLATE, {
       assignee: task.assignee ?? "",
@@ -95,9 +117,16 @@ export async function GET(request: Request) {
         sent++;
       } else {
         failed++;
+        const body = await res.text().catch(() => "");
+        await logIssue(task, "gateway_error", `${res.status}${body ? `: ${body.slice(0, 160)}` : ""}`);
       }
-    } catch {
+    } catch (err) {
       failed++;
+      await logIssue(
+        task,
+        "gateway_error",
+        err instanceof Error ? err.message : "сеть недоступна"
+      );
     }
   }
 
