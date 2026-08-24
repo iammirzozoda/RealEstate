@@ -65,5 +65,12 @@ export function logoMime(u: string): string {
   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
   if (lower.endsWith(".webp")) return "image/webp";
   if (lower.endsWith(".svg")) return "image/svg+xml";
+  // Was missing -- the upload field accepts .gif (see upload.ts's
+  // ALLOWED_TYPES), and a .gif logo fell through to the "image/png"
+  // default below. A manifest icon's declared `type` has to match what
+  // the URL actually serves; browsers that check drop a mismatched icon
+  // instead of falling back to a different one, so a gif logo silently
+  // never appeared on an installed/pinned icon at all.
+  if (lower.endsWith(".gif")) return "image/gif";
   return "image/png";
 }

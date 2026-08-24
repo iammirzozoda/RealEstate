@@ -6,6 +6,17 @@ import { getBranding, logoMime } from "@/lib/branding";
 // phone/desktop shows the firm's own logo -- not a generic placeholder.
 // Non-square logos are given `purpose: "any"` (never "maskable"), so the OS
 // places them on a generated background instead of cropping/stretching them.
+//
+// force-dynamic: without it, a metadata route with no dynamic API in play
+// (no cookies/headers/searchParams -- getBranding is a plain fetch) can get
+// prerendered once at build/deploy time and served as a fixed static file
+// from then on, regardless of the fetch's own `revalidate`. On a first
+// deploy that means "no logo yet" gets baked in permanently. This forces
+// the route itself to actually run on each request; the branding fetch
+// below still keeps its own 5-minute cache, so a logo upload just needs
+// up to 5 minutes (not a redeploy) to reach a freshly (re)installed icon.
+export const dynamic = "force-dynamic";
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const { name, logo } = await getBranding();
   const appName = name || "RealEstate CRM";
