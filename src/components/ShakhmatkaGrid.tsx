@@ -343,6 +343,20 @@ function UnitCell({
               : formatCurrency(unit.price, unit.currency)}
           </span>
         </div>
+        {unit.area != null && unit.area > 0 && (
+          <div className="flex items-baseline justify-between px-3.5 pb-1.5">
+            <span className="text-[10px] text-[var(--ink-5)]">{t.buildings.hover.pricePerSqm}</span>
+            <span className="text-[11px] font-medium text-[var(--ink-3)]">
+              {/* Same price the row above shows (deal amount once sold/
+                  reserved, catalog price otherwise) divided by area -- what
+                  the front desk actually gets asked: "за сколько ушёл метр". */}
+              {formatCurrency(
+                Math.round((contractInfo ? contractInfo.amount : (unit.price ?? 0)) / unit.area),
+                contractInfo ? contractInfo.currency : unit.currency
+              )}
+            </span>
+          </div>
+        )}
 
         {contractInfo && (
           <div className="border-t border-[var(--border-c2)] px-3.5 py-2">
