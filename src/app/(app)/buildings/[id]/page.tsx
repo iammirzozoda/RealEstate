@@ -20,6 +20,7 @@ import { UnitEditModal } from "@/components/UnitEditModal";
 import { Toast, type ToastType } from "@/components/Toast";
 import { ConstructionStatusBadge } from "@/components/ConstructionStatusBadge";
 import { DuplicateBuildingModal } from "@/components/DuplicateBuildingModal";
+import { RentalUnitsSection } from "@/components/RentalUnitsSection";
 import { PlanViewerModal } from "@/components/PlanViewerModal";
 import {
   DocumentIcon,
@@ -49,6 +50,13 @@ export default function BuildingDetailPage() {
     configured ? undefined : null
   );
   const [units, setUnits] = useState<PropertyObject[]>([]);
+  // The shakhmatka (and everything numbered/laid-out like one -- filters,
+  // apartment numbering, "duplicate building") only ever means units meant
+  // for SALE. Units marked listing_type = 'rent' (warehouses, storage --
+  // whatever a building rents out instead of sells) live in their own
+  // section below it instead, never mixed into the grid.
+  const saleUnits = useMemo(() => units.filter((u) => u.listing_type !== "rent"), [units]);
+  const rentalUnits = useMemo(() => units.filter((u) => u.listing_type === "rent"), [units]);
   const [contractsByUnit, setContractsByUnit] = useState<Record<string, UnitContractInfo>>(
     {}
   );
@@ -107,7 +115,7 @@ export default function BuildingDetailPage() {
     plan_url: u.plan_url ?? null,
   });
 
-  const apartmentNumbers = useMemo(() => computeApartmentNumbers(units), [units]);
+  const apartmentNumbers = useMemo(() => computeApartmentNumbers(saleUnits), [saleUnits]);
 
   // All three queries go out AT ONCE. They used to be a strict chain -- fetch
   // the units, then fetch the contracts for those unit ids, then fetch the
@@ -477,9 +485,9 @@ export default function BuildingDetailPage() {
                 small size so they line up as a single band instead of a tall
                 icon row above a separate strip of chips. */}
             <div className="flex flex-wrap items-center justify-end gap-2">
-            {units.length > 0 && (
+            {saleUnits.length > 0 && (
               <ShakhmatkaFilters
-                units={units}
+                units={saleUnits}
                 statusFilter={statusFilter}
                 onStatusChange={setStatusFilter}
                 roomsFilter={roomsFilter}
@@ -542,7 +550,7 @@ export default function BuildingDetailPage() {
           {showDuplicate && (
             <DuplicateBuildingModal
               building={building}
-              units={units}
+              units={saleUnits}
               onClose={() => setShowDuplicate(false)}
             />
           )}
@@ -565,7 +573,7 @@ export default function BuildingDetailPage() {
 
           <ShakhmatkaGrid
             editMode={editMode}
-            units={units}
+            units={saleUnits}
             contractsByUnit={contractsByUnit}
             readOnly={role === "director"}
             onBookUnit={setBookingUnit}
@@ -581,6 +589,16 @@ export default function BuildingDetailPage() {
             statusFilter={statusFilter}
             roomsFilter={roomsFilter}
             gapFilter={gapFilter}
+          />
+
+          <RentalUnitsSection
+            buildingId={building.id}
+            units={rentalUnits}
+            contractsByUnit={contractsByUnit}
+            canEdit={role === "admin"}
+            onBookUnit={setBookingUnit}
+            onAdded={loadUnits}
+            onDeleted={loadUnits}
           />
 
           {addingUnit && (

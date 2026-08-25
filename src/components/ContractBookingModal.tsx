@@ -70,12 +70,17 @@ export function ContractBookingModal({
       return;
     }
 
-    // Object status (available/reserved/sold) is derived automatically by a
-    // DB trigger from the contract's paid_amount -- no manual update here.
+    // Object status (available/reserved/sold/rented) is derived
+    // automatically by a DB trigger from the contract's paid_amount --
+    // no manual update here.
     const paidAmount = values.paid_amount ? Number(values.paid_amount) : 0;
     const amount = values.amount ? Number(values.amount) : 0;
+    // 'rent': amount is the lease's total value and months is its term,
+    // not a sale price/payoff schedule -- otherwise the exact same
+    // equal-split generation as an installment sale.
     const months =
-      values.payment_type === "installment" && values.installment_months
+      (values.payment_type === "installment" || values.payment_type === "rent") &&
+      values.installment_months
         ? Number(values.installment_months)
         : 0;
     const baseDate = values.signed_date || new Date().toISOString().slice(0, 10);
@@ -175,6 +180,10 @@ export function ContractBookingModal({
               object_id: unit.id,
               amount: unit.price?.toString() ?? "",
               currency: unit.currency,
+              // A unit listed for rent is never being sold -- default the
+              // payment type to match instead of making staff switch it
+              // from "full payment" every single time.
+              payment_type: unit.listing_type === "rent" ? "rent" : "full",
               // The deal is being struck now -- default the signing date to
               // today rather than making staff pick it every single time.
               signed_date: new Date().toISOString().slice(0, 10),

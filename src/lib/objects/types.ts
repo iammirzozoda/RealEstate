@@ -20,12 +20,21 @@ export const OBJECT_STATUSES = [
 ] as const;
 export type ObjectStatus = (typeof OBJECT_STATUSES)[number];
 
+// What this object is FOR, decided at creation, before any contract
+// exists -- not derived from status the way 'rented' vs 'sold' is. This
+// is what tells a vacant warehouse meant for rent apart from a vacant
+// apartment meant for sale: the shakhmatka only ever shows 'sale'
+// objects, the "Аренда" section on a building's page only 'rent' ones.
+export const LISTING_TYPES = ["sale", "rent"] as const;
+export type ListingType = (typeof LISTING_TYPES)[number];
+
 export type PropertyObject = {
   id: string;
   name: string;
   address: string | null;
   type: ObjectType;
   status: ObjectStatus;
+  listing_type: ListingType;
   area: number | null;
   price: number | null;
   currency: Currency;
@@ -47,6 +56,7 @@ export type PropertyObjectInput = {
   address: string;
   type: ObjectType;
   status: ObjectStatus;
+  listing_type: ListingType;
   area: string;
   price: string;
   currency: Currency;

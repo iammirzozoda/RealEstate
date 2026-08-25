@@ -8,7 +8,13 @@ export const CONTRACT_STATUSES = [
 ] as const;
 export type ContractStatus = (typeof CONTRACT_STATUSES)[number];
 
-export const PAYMENT_TYPES = ["full", "installment", "barter"] as const;
+// 'rent': amount is the lease's total value (monthly rate × months), not
+// the object's price -- installment_months means lease term, not payoff
+// schedule. Otherwise mechanically identical to 'installment' (same
+// equal-split-by-month schedule, see regenerate_schedule and
+// ContractBookingModal), so no separate payment machinery was needed for
+// a recurring-looking charge that's really just a fixed-term split.
+export const PAYMENT_TYPES = ["full", "installment", "barter", "rent"] as const;
 export type PaymentType = (typeof PAYMENT_TYPES)[number];
 
 export type Contract = {

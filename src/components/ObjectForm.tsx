@@ -13,6 +13,7 @@ const emptyInput: PropertyObjectInput = {
   address: "",
   type: "apartment",
   status: "available",
+  listing_type: "sale",
   area: "",
   price: "",
   currency: "TJS",

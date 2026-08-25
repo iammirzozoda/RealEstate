@@ -548,10 +548,12 @@ export function ContractForm({
             ))}
           </select>
         </label>
-        {values.payment_type === "installment" && (
+        {(values.payment_type === "installment" || values.payment_type === "rent") && (
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-slate-700">
-              {t.contracts.form.installmentMonths}
+              {values.payment_type === "rent"
+                ? t.contracts.form.leaseMonths
+                : t.contracts.form.installmentMonths}
             </span>
             <input
               type="number"
@@ -564,33 +566,45 @@ export function ContractForm({
         )}
       </div>
 
-      {values.payment_type === "installment" && installmentMonthsNum > 0 && (
-        <div className="flex flex-col gap-1.5 rounded-lg bg-slate-50 p-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-slate-500">{t.contracts.form.downPayment}</span>
-            <span className="font-medium text-slate-900">
-              {formatCurrency(paidNum, values.currency)}
-            </span>
+      {/* Mechanically identical for 'rent': the amount here is the lease's
+          total value (monthly rate × term), split the same equal-per-month
+          way an installment sale is -- see PAYMENT_TYPES' own comment on
+          why this doesn't need separate machinery. Only the wording
+          changes (arendная плата, not ежемесячный платёж), so the reader
+          isn't left guessing whether this is a sale schedule for a
+          warehouse that was never for sale. */}
+      {(values.payment_type === "installment" || values.payment_type === "rent") &&
+        installmentMonthsNum > 0 && (
+          <div className="flex flex-col gap-1.5 rounded-lg bg-slate-50 p-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">{t.contracts.form.downPayment}</span>
+              <span className="font-medium text-slate-900">
+                {formatCurrency(paidNum, values.currency)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">{t.contracts.form.installmentRemaining}</span>
+              <span className="font-medium text-slate-900">
+                {formatCurrency(installmentRemaining, values.currency)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t border-slate-200 pt-1.5">
+              <span className="font-medium text-slate-700">
+                {values.payment_type === "rent"
+                  ? t.contracts.form.monthlyRent
+                  : t.contracts.form.monthlyPayment}
+              </span>
+              <span className="font-semibold text-slate-900">
+                {formatCurrency(monthlyBase, values.currency)} × {installmentMonthsNum}
+                {monthlyLast !== monthlyBase && (
+                  <span className="ml-1 font-normal text-slate-400">
+                    ({formatCurrency(monthlyLast, values.currency)} {t.contracts.form.lastMonth})
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">{t.contracts.form.installmentRemaining}</span>
-            <span className="font-medium text-slate-900">
-              {formatCurrency(installmentRemaining, values.currency)}
-            </span>
-          </div>
-          <div className="flex justify-between border-t border-slate-200 pt-1.5">
-            <span className="font-medium text-slate-700">{t.contracts.form.monthlyPayment}</span>
-            <span className="font-semibold text-slate-900">
-              {formatCurrency(monthlyBase, values.currency)} × {installmentMonthsNum}
-              {monthlyLast !== monthlyBase && (
-                <span className="ml-1 font-normal text-slate-400">
-                  ({formatCurrency(monthlyLast, values.currency)} {t.contracts.form.lastMonth})
-                </span>
-              )}
-            </span>
-          </div>
-        </div>
-      )}
+        )}
 
       {values.payment_type === "barter" && (
         <label className="flex flex-col gap-1 text-sm">
