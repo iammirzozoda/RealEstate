@@ -44,7 +44,7 @@ export function ExportMenu({
     const rows = await getData();
     const { exportExcel, exportPdf, todayStamp } = await import("@/lib/export/exportTable");
     if (format === "excel") {
-      exportExcel(`${filenameBase}-${todayStamp()}`, headers, rows);
+      await exportExcel(`${filenameBase}-${todayStamp()}`, headers, rows, title);
     } else {
       exportPdf(title, headers, rows);
     }
