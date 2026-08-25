@@ -961,7 +961,7 @@ export const dictionaries = {
       mismatch: "PIN-кодҳо мувофиқат намекунанд",
     },
     nav: {
-      dashboard: "Дашборд",
+      dashboard: "Омор",
       objects: "Объектҳо",
       clients: "Мизоҷон",
       debtors: "Қарздорон",
@@ -980,7 +980,7 @@ export const dictionaries = {
       contracts: "Шартномаҳо",
     },
     dashboard: {
-      title: "Дашборд",
+      title: "Омор",
       totalObjects: "Ҳамаи хонаҳо",
       available: "Озод",
       reserved: "Брон карда шуд",
