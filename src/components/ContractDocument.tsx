@@ -829,9 +829,14 @@ export function ContractDocument({
             баҳрабардорӣ ва расмиятдарорӣ бо моликият пас аз анҷоми корҳои зайл омода
             ҳисобида мешаванд:
           </p>
-          {/* Two columns: the list is 14 short items, so a single column
-              left half the page empty and pushed the signatures over. */}
-          <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-0.5">
+          {/* One column, per request -- was two (see git history for why:
+              14 short items in a single column left the right half of the
+              page empty). break-inside-avoid keeps the whole list from
+              splitting across the page boundary if it ever runs close to
+              the edge; text-[11px] matches the body size used everywhere
+              else in the document (sections 1-9), not the 12px this list
+              used to run at on its own. */}
+          <div className="mt-2 flex flex-col gap-y-0.5 break-inside-avoid">
             {worksList.map((w, i) => (
               <div key={w} className="flex items-baseline gap-2 py-[2px]">
                 <span
@@ -840,7 +845,7 @@ export function ContractDocument({
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="text-[12px]">{w}</span>
+                <span className="text-[11px]">{w}</span>
               </div>
             ))}
           </div>
