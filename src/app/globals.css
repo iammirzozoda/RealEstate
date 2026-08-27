@@ -281,6 +281,104 @@
   border-color: color-mix(in srgb, var(--accent-dark) 35%, transparent);
 }
 
+/* Shared "add" action -- outline in the brand colour at rest, fills on
+   hover via a sweep (a scaleX'd ::before, not a flat colour swap) so the
+   interaction reads as switching on, not just recolouring. One class for
+   every button in the app that adds something (a unit, a client, a
+   payment, a floor/block, a new record) so they read as one control
+   instead of each page inventing its own. Sizes via .btn-add-sm/-md/-lg;
+   AddButton (components/AddButton.tsx) is the one place that assembles
+   these plus the plus-icon -- edit the look here, not per call site. */
+.btn-add {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  border: 1.5px solid color-mix(in srgb, var(--brand) 34%, transparent);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--brand);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.22s,
+    border-color 0.15s;
+}
+.btn-add::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(to right, var(--brand-strong), var(--brand));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s ease;
+}
+:root[data-hero-theme="lemon"] .btn-add::before {
+  background-image: none;
+  background-color: var(--brand);
+}
+.btn-add:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-add:hover:not(:disabled)::before {
+  transform: scaleX(1);
+}
+.btn-add:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+.btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-add svg {
+  transition: transform 0.28s ease;
+}
+.btn-add:hover:not(:disabled) svg {
+  transform: rotate(45deg);
+}
+/* Same dark-mode swap .btn-brand gets: the company's own brand colour is
+   left alone, the fixed yellow accent takes over for every primary-ish
+   action so dark mode reads as one consistent accent. */
+:root[data-theme="dark"] .btn-add {
+  border-color: color-mix(in srgb, var(--accent-dark) 38%, transparent);
+  color: var(--accent-dark);
+}
+:root[data-theme="dark"] .btn-add::before {
+  background-image: none;
+  background-color: var(--accent-dark);
+}
+:root[data-theme="dark"] .btn-add:hover:not(:disabled) {
+  color: #18181b;
+}
+.btn-add-sm {
+  height: 1.875rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 7px;
+}
+.btn-add-md {
+  height: 2.375rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+}
+.btn-add-lg {
+  height: 2.875rem;
+  padding: 0 1.25rem;
+  font-size: 0.9375rem;
+  border-radius: 10px;
+}
+.btn-add-block {
+  width: 100%;
+}
+
 ::selection {
   background: rgb(227 167 59 / 0.35);
   color: var(--atlas-indigo);

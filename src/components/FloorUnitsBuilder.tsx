@@ -7,6 +7,7 @@ import { OBJECT_TYPES, type ObjectType } from "@/lib/objects/types";
 import { buildUnitsFromRows, type StructureRow } from "@/lib/buildings/generateUnits";
 import { formatCurrency } from "@/lib/currency";
 import type { PropertyObject } from "@/lib/objects/types";
+import { AddButton } from "@/components/AddButton";
 
 // Atlas accents, same as the hero and the contract.
 const PLUM = "#5b3468";
@@ -375,13 +376,12 @@ export function FloorUnitsBuilder({
                 </div>
               ))}
 
-              <button
-                type="button"
+              <AddButton
+                size="sm"
                 onClick={() => patchBlock(i, { ranges: [...block.ranges, emptyRange()] })}
-                className="w-fit rounded-lg border border-[var(--field-border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-3)] transition-colors hover:bg-[var(--field-bg)]"
               >
                 {t.buildings.floorBuilder.addRange}
-              </button>
+              </AddButton>
             </div>
           );
         })}
@@ -483,14 +483,9 @@ export function FloorUnitsBuilder({
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setBlocks((bs) => [...bs, emptyBlock()])}
-          style={{ borderColor: PLUM, color: PLUM }}
-          className="rounded-lg border px-3.5 py-2 text-sm font-medium transition-all hover:bg-[var(--wash-plum)] active:scale-[0.98]"
-        >
+        <AddButton onClick={() => setBlocks((bs) => [...bs, emptyBlock()])}>
           {t.buildings.floorBuilder.addBlock}
-        </button>
+        </AddButton>
         <button
           type="button"
           onClick={handleGenerate}

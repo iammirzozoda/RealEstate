@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { DATE_BOUNDS, isDateInRange } from "@/lib/dates";
 import { PassportScanner } from "@/components/PassportScanner";
+import { AddButton } from "@/components/AddButton";
 import type { Client, ClientInput } from "@/lib/clients/types";
 
 const FIELD_CLASS =
@@ -299,13 +300,13 @@ export function ClientAutocomplete({
       )}
 
       {!selected && (
-        <button
-          type="button"
+        <AddButton
+          size="sm"
+          className="mt-1"
           onClick={() => onNewClientChange({ ...emptyNewClient, name: query.trim() })}
-          className="mt-1 w-fit rounded-md px-1.5 py-1 text-xs font-medium text-[var(--ink-4)] transition-colors hover:bg-[var(--hover-c2)] hover:text-[var(--ink-1)]"
         >
           {t.clients.form.addNew}
-        </button>
+        </AddButton>
       )}
     </div>
   );

@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { SetupNotice } from "@/components/SetupNotice";
 import { ContractBookingModal } from "@/components/ContractBookingModal";
 import { ControlGroup, PillButton } from "@/components/ActionBar";
+import { AddButton } from "@/components/AddButton";
 import { formatCurrency } from "@/lib/currency";
 import { formatArea } from "@/lib/objects/format";
 import { STATUS_HUES } from "@/components/charts/palette";
@@ -177,13 +178,9 @@ export default function RentalsPage() {
           ))}
         </ControlGroup>
         {canEdit && !adding && (
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="w-fit rounded-lg border border-[var(--field-border)] px-3 py-1.5 text-sm font-medium text-[var(--ink-2)] transition-colors hover:bg-[var(--hover-c)]"
-          >
+          <AddButton size="sm" onClick={() => setAdding(true)}>
             {t.buildings.rental.add}
-          </button>
+          </AddButton>
         )}
       </div>
 
