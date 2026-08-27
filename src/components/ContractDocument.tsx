@@ -232,12 +232,21 @@ export function ContractDocument({
     contract.amount_words || amountToWordsTj(contract.amount, contract.currency);
 
   const aptNo = apartmentNumber != null ? String(apartmentNumber) : "____";
-  const paymentLabel =
-    contract.payment_type === "installment"
+  // A DRAFT template, not vetted legal wording -- see the isRent branches
+  // below throughout this component. Flagged in chat when this was added:
+  // review before actually handing one to a tenant to sign.
+  const isRent = contract.payment_type === "rent";
+  const paymentLabel = isRent
+    ? `Иҷора · ${contract.installment_months ?? "__"} моҳ`
+    : contract.payment_type === "installment"
       ? `Бо қисм · ${contract.installment_months ?? "__"} моҳ`
       : contract.payment_type === "barter"
         ? "Бартер"
         : "Якбора";
+  const sellerLabel = isRent ? "АРЕНДОДАТЕЛЬ" : "Фурӯшанда";
+  const buyerLabel = isRent ? "АРЕНДАТОР" : "Харидор";
+  const sellerLabelUpper = isRent ? "АРЕНДОДАТЕЛЬ" : "ФУРӮШАНДА";
+  const buyerLabelUpper = isRent ? "АРЕНДАТОР" : "ХАРИДОР";
   // Block/entrance is its own line, not joined into the same string as
   // floor/area/rooms: a block name like "Блоки А / Даромадгоҳи 1" is long
   // enough on its own to wrap, and wrapping it next to unrelated short items
@@ -367,7 +376,7 @@ export function ContractDocument({
           <div className="flex items-center gap-3">
             <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
             <p className="shrink-0 text-center text-[18px] font-bold tracking-[0.14em]">
-              ШАРТНОМАИ ҲАМКОРӢ
+              {isRent ? "ШАРТНОМАИ ИҶОРА" : "ШАРТНОМАИ ҲАМКОРӢ"}
             </p>
             <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
           </div>
@@ -440,12 +449,12 @@ export function ContractDocument({
                 sets, so the panel reads as compact regardless of which
                 column happens to be taller. */}
             <div className="flex flex-1 flex-col justify-center px-3.5 py-1.5">
-              <SummaryRow label="Фурӯшанда" value={`ҶДММ «${companyName}»`} />
-              <SummaryRow label="Харидор" value={contract.client?.name ?? "____________"} />
+              <SummaryRow label={sellerLabel} value={`ҶДММ «${companyName}»`} />
+              <SummaryRow label={buyerLabel} value={contract.client?.name ?? "____________"} />
               <SummaryRow label="Шиноснома" value={contract.client?.passport ?? "—"} />
               <SummaryRow label="Навъи пардохт" value={paymentLabel} />
               <SummaryRow
-                label="Маблағи умумӣ"
+                label={isRent ? "Маблағи умумии иҷора" : "Маблағи умумӣ"}
                 value={docAmount(contract.amount, contract.currency)}
                 big
                 last
@@ -455,92 +464,207 @@ export function ContractDocument({
           </div>
 
           <Section num={1} title="Тарафҳои аҳдкунанда" />
-          <p className="text-justify">
-            Ҷамъияти дорои масъулияти маҳдуди «{companyName}» дар шахсияти роҳбари ҷамъият{" "}
-            <b>{director}</b>, ки дар асоси Оинномаи ҷамъият амал мекунад, аз як тараф,
-            минбаъд <b>«Фурӯшанда»</b> ва аз тарафи дигар шаҳрванди Ҷумҳурии Тоҷикистон{" "}
-            <Var>{contract.client?.name ?? "____________"}</Var>
-            {contract.client?.passport ? ", шиноснома № " : ""}
-            {contract.client?.passport && <Var>{contract.client.passport}</Var>}
-            {contract.client?.passport_issued_by ? ", дода шудааст аз ҷониби " : ""}
-            {contract.client?.passport_issued_by && (
-              <Var>{contract.client.passport_issued_by}</Var>
-            )}
-            , ки минбаъд <b>«Харидор»</b> номида мешавад, ҳамин шартномаро бо шартҳои зерин
-            бастанд.
-          </p>
+          {isRent ? (
+            <p className="text-justify">
+              Ҷамъияти дорои масъулияти маҳдуди «{companyName}» дар шахсияти роҳбари ҷамъият{" "}
+              <b>{director}</b>, ки дар асоси Оинномаи ҷамъият амал мекунад, аз як тараф,
+              минбаъд <b>«АРЕНДОДАТЕЛЬ»</b> ва аз тарафи дигар шаҳрванди Ҷумҳурии Тоҷикистон{" "}
+              <Var>{contract.client?.name ?? "____________"}</Var>
+              {contract.client?.passport ? ", шиноснома № " : ""}
+              {contract.client?.passport && <Var>{contract.client.passport}</Var>}
+              {contract.client?.passport_issued_by ? ", дода шудааст аз ҷониби " : ""}
+              {contract.client?.passport_issued_by && (
+                <Var>{contract.client.passport_issued_by}</Var>
+              )}
+              , ки минбаъд <b>«АРЕНДАТОР»</b> номида мешавад, ҳамин шартномаро оид ба иҷораи
+              хона бо шартҳои зерин бастанд.
+            </p>
+          ) : (
+            <p className="text-justify">
+              Ҷамъияти дорои масъулияти маҳдуди «{companyName}» дар шахсияти роҳбари ҷамъият{" "}
+              <b>{director}</b>, ки дар асоси Оинномаи ҷамъият амал мекунад, аз як тараф,
+              минбаъд <b>«Фурӯшанда»</b> ва аз тарафи дигар шаҳрванди Ҷумҳурии Тоҷикистон{" "}
+              <Var>{contract.client?.name ?? "____________"}</Var>
+              {contract.client?.passport ? ", шиноснома № " : ""}
+              {contract.client?.passport && <Var>{contract.client.passport}</Var>}
+              {contract.client?.passport_issued_by ? ", дода шудааст аз ҷониби " : ""}
+              {contract.client?.passport_issued_by && (
+                <Var>{contract.client.passport_issued_by}</Var>
+              )}
+              , ки минбаъд <b>«Харидор»</b> номида мешавад, ҳамин шартномаро бо шартҳои зерин
+              бастанд.
+            </p>
+          )}
 
           <Section num={2} title="Мақсади шартнома" />
-          <p className="text-justify">
-            2.1. Бо мақсади вусъат бахшидани рафти сохтмони биноҳои истиқоматии баландошёна
-            бо пентхаус, дар ошёнаи якум маркази савдо ва хизматрасонӣ ва дар таҳхонаҳои онҳо
-            ташкил намудани таваққуфгоҳи зеризаминӣ, воқеъ дар <Var>{buildingAddress}</Var>, тарафҳо
-            уҳдадор шуданд, ки бо шартҳои манфиати мутақобила ҳамкорӣ намоянд.
-          </p>
-          <p className="text-justify">
-            2.2. «Фурӯшанда» имконият медиҳад, ки «Харидор» дар маблағгузории иншооти мазкур
-            ширкат намуда, ҳуҷраи истиқоматии <Var>№{aptNo}</Var>-ро, ки нишондиҳандаҳои он
-            (ошёна, шумораи ҳуҷраҳо, масоҳат ва нарх барои 1 м²) дар «Маълумоти аҳд»-и боло
-            оварда шудаанд, ба моликияти худ ба расмият дарорад. «Харидор» уҳдадор мешавад, ки
-            маблағи умумии дар «Маълумоти аҳд» нишондодашударо ({amountWords}) дар муҳлати
-            пешбининамудаи шартномаи мазкур пардохт намуда, минбаъд онро ба моликияти шахсии
-            худ табдил диҳад.
-          </p>
-          <p className="text-justify">
-            2.3. «Фурӯшанда» бо анҷом расидани корҳои сохтмонӣ ва супоридани иншоот ба
-            «Харидор» масоҳати зикршударо, ки дар банди 2.2-и шартномаи мазкур нишон дода
-            шудааст, месупорад.
-          </p>
-          <p className="text-justify">
-            2.4. «Харидор» аз лаҳзаи бастани шартномаи ҳамкорӣ талаботи дар банди 2.2-и
-            шартномаи мазкур нишон додашударо таъмин менамояд.
-          </p>
+          {isRent ? (
+            <>
+              <p className="text-justify">
+                2.1. Мутобиқи шартномаи мазкур «АРЕНДОДАТЕЛЬ» ҳуҷраи (хонаи){" "}
+                <Var>№{aptNo}</Var>-ро, воқеъ дар <Var>{buildingAddress}</Var>, бо
+                нишондиҳандаҳои дар «Маълумоти аҳд»-и боло овардашуда (масоҳат, нарх барои
+                1 м²), бо шартҳои иҷора ба «АРЕНДАТОР» месупорад.
+              </p>
+              <p className="text-justify">
+                2.2. Мӯҳлати иҷора{" "}
+                <Var>{contract.installment_months ?? "__"} моҳ</Var>-ро ташкил медиҳад, аз
+                санаи <Var>{shortDate(contract.signed_date)}</Var> сар карда.
+              </p>
+              <p className="text-justify">
+                2.3. «АРЕНДАТОР» уҳдадор мешавад маблағи иҷораро дар андозаи дар «Маълумоти
+                аҳд» нишондодашуда ({amountWords}), тибқи ҷадвали замимашудаи пардохт, ҳар моҳ
+                пардохт намояд.
+              </p>
+              <p className="text-justify">
+                2.4. Супоридани ҳуҷра (хона) ба иҷора моликияти онро ба «АРЕНДАТОР» интиқол
+                намедиҳад — ба «АРЕНДАТОР» танҳо ҳуқуқи истифодабарии муваққатӣ дар давоми
+                мӯҳлати шартномаи мазкур дода мешавад.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-justify">
+                2.1. Бо мақсади вусъат бахшидани рафти сохтмони биноҳои истиқоматии баландошёна
+                бо пентхаус, дар ошёнаи якум маркази савдо ва хизматрасонӣ ва дар таҳхонаҳои онҳо
+                ташкил намудани таваққуфгоҳи зеризаминӣ, воқеъ дар <Var>{buildingAddress}</Var>, тарафҳо
+                уҳдадор шуданд, ки бо шартҳои манфиати мутақобила ҳамкорӣ намоянд.
+              </p>
+              <p className="text-justify">
+                2.2. «Фурӯшанда» имконият медиҳад, ки «Харидор» дар маблағгузории иншооти мазкур
+                ширкат намуда, ҳуҷраи истиқоматии <Var>№{aptNo}</Var>-ро, ки нишондиҳандаҳои он
+                (ошёна, шумораи ҳуҷраҳо, масоҳат ва нарх барои 1 м²) дар «Маълумоти аҳд»-и боло
+                оварда шудаанд, ба моликияти худ ба расмият дарорад. «Харидор» уҳдадор мешавад, ки
+                маблағи умумии дар «Маълумоти аҳд» нишондодашударо ({amountWords}) дар муҳлати
+                пешбининамудаи шартномаи мазкур пардохт намуда, минбаъд онро ба моликияти шахсии
+                худ табдил диҳад.
+              </p>
+              <p className="text-justify">
+                2.3. «Фурӯшанда» бо анҷом расидани корҳои сохтмонӣ ва супоридани иншоот ба
+                «Харидор» масоҳати зикршударо, ки дар банди 2.2-и шартномаи мазкур нишон дода
+                шудааст, месупорад.
+              </p>
+              <p className="text-justify">
+                2.4. «Харидор» аз лаҳзаи бастани шартномаи ҳамкорӣ талаботи дар банди 2.2-и
+                шартномаи мазкур нишон додашударо таъмин менамояд.
+              </p>
+            </>
+          )}
 
           <Section num={3} title="Уҳдадориҳои тарафҳо" />
-          <p className="text-justify">
-            3.1. «Фурӯшанда» уҳдадор мешавад ба «Харидор» барои ба расмият даровардани
-            манзили истиқоматӣ ба моликияти шахсӣ шиносномаи техникӣ диҳад, ки он баъди
-            қабули иншоот ба баҳрабардорӣ дода мешавад.
-          </p>
-          <p className="text-justify">
-            3.2. Тамоми хароҷоти вобаста ба ҳуҷҷатгузории нотариалӣ ва бақайдгирии давлатӣ,
-            аз рӯи нархномаи КДФБММГ ва нотариуси давлатӣ, мустақилона аз ҷониби «Харидор»
-            пардохт карда мешавад.
-          </p>
+          {isRent ? (
+            <>
+              <p className="text-justify">
+                3.1. «АРЕНДОДАТЕЛЬ» уҳдадор мешавад ҳуҷраро (хонаро) дар ҳолати барои истифода
+                мувофиқ ба «АРЕНДАТОР» супорад.
+              </p>
+              <p className="text-justify">
+                3.2. «АРЕНДАТОР» уҳдадор мешавад ҳуҷраро (хонаро) тибқи таъиноти он истифода
+                барад, ҳолати онро нигоҳ дорад ва хароҷоти ҷории истифодабарӣ (обу барқ ва
+                монанди инҳо, агар дар шартнома тартиби дигар пешбинӣ нашуда бошад)-ро
+                мустақилона пардохт намояд.
+              </p>
+              <p className="text-justify">
+                3.3. Бе розигии хаттии «АРЕНДОДАТЕЛЬ» «АРЕНДАТОР» ҳуқуқи ба зерижора додани
+                ҳуҷраро (хонаро) ба шахси сеюм надорад.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-justify">
+                3.1. «Фурӯшанда» уҳдадор мешавад ба «Харидор» барои ба расмият даровардани
+                манзили истиқоматӣ ба моликияти шахсӣ шиносномаи техникӣ диҳад, ки он баъди
+                қабули иншоот ба баҳрабардорӣ дода мешавад.
+              </p>
+              <p className="text-justify">
+                3.2. Тамоми хароҷоти вобаста ба ҳуҷҷатгузории нотариалӣ ва бақайдгирии давлатӣ,
+                аз рӯи нархномаи КДФБММГ ва нотариуси давлатӣ, мустақилона аз ҷониби «Харидор»
+                пардохт карда мешавад.
+              </p>
+            </>
+          )}
 
           <Section num={4} title="Масъулияти тарафҳо" />
-          <p className="text-justify">
-            4.1. «Харидор» барои саривақт пардохт намудани маблағи шартнома дар банди 2.2
-            шартномаи мазкур нишондодашуда масъул мебошад.
-          </p>
-          <p className="text-justify">
-            4.2. «Фурӯшанда» барои саривақт ва босифат иҷро намудани корҳои сохтмонӣ –
-            васлкунии иншоот масъул мебошад.
-          </p>
+          {isRent ? (
+            <>
+              <p className="text-justify">
+                4.1. «АРЕНДАТОР» барои саривақт пардохт намудани маблағи иҷора масъул мебошад.
+              </p>
+              <p className="text-justify">
+                4.2. «АРЕНДОДАТЕЛЬ» барои пешниҳод намудани ҳуҷра (хона) дар ҳолати барои
+                истифода мувофиқ, дар мӯҳлати банди 2.1-и шартномаи мазкур масъул мебошад.
+              </p>
+              <p className="text-justify">
+                4.3. «АРЕНДАТОР» барои зараре, ки аз ҷониби худи ӯ ба ҳуҷра (хона) расонида
+                мешавад, ба ғайр аз кӯҳнашавии табиӣ, масъул мебошад.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-justify">
+                4.1. «Харидор» барои саривақт пардохт намудани маблағи шартнома дар банди 2.2
+                шартномаи мазкур нишондодашуда масъул мебошад.
+              </p>
+              <p className="text-justify">
+                4.2. «Фурӯшанда» барои саривақт ва босифат иҷро намудани корҳои сохтмонӣ –
+                васлкунии иншоот масъул мебошад.
+              </p>
+            </>
+          )}
 
           <Section num={5} title="Чораҳои ҷаримавӣ" />
-          <p className="text-justify">
-            5.1. Дар мавриди риоя накардани муҳлати пардохт зиёда аз як моҳ ба андозаи 0,1%
-            аз маблағи умумии шартнома барои ҳар як рӯзи ба таъхирандозӣ, на зиёда аз 10%,
-            «Харидор» ба «Фурӯшанда» ҷарима пардохт менамояд.
-          </p>
-          <p className="text-justify">
-            5.2. Дар ҳолати «Харидор» пас аз анҷоми сохтмони бинои истиқоматии бисёрошёна дар
-            банди 2.2 шартномаи мазкур муқараргардидаро рад намояд, бо ҷарима ситонида ба
-            андозаи 10%-и маблағи умумии дар шартнома зикршуда баргардонида мешавад.
-          </p>
+          {isRent ? (
+            <p className="text-justify">
+              5.1. Дар мавриди риоя накардани муҳлати пардохти иҷора зиёда аз 10 рӯз, ба
+              андозаи 0,1% аз маблағи иҷораи як моҳ барои ҳар як рӯзи ба таъхирандозӣ, на
+              зиёда аз 10%, «АРЕНДАТОР» ба «АРЕНДОДАТЕЛЬ» ҷарима пардохт менамояд.
+            </p>
+          ) : (
+            <>
+              <p className="text-justify">
+                5.1. Дар мавриди риоя накардани муҳлати пардохт зиёда аз як моҳ ба андозаи 0,1%
+                аз маблағи умумии шартнома барои ҳар як рӯзи ба таъхирандозӣ, на зиёда аз 10%,
+                «Харидор» ба «Фурӯшанда» ҷарима пардохт менамояд.
+              </p>
+              <p className="text-justify">
+                5.2. Дар ҳолати «Харидор» пас аз анҷоми сохтмони бинои истиқоматии бисёрошёна дар
+                банди 2.2 шартномаи мазкур муқараргардидаро рад намояд, бо ҷарима ситонида ба
+                андозаи 10%-и маблағи умумии дар шартнома зикршуда баргардонида мешавад.
+              </p>
+            </>
+          )}
 
           <Section num={6} title="Ҳолатҳои бекор намудани шартнома" />
-          <p className="text-justify">
-            6.1. Шартнома тибқи мувофиқаи тарафайн то пардохт намудан ва ё бо тартиби
-            яктарафа дар мавриди қобилияти имконнопазир рад намуда, «Харидор» изҳори
-            боздошти пардохт беш аз як моҳ аз муҳлати пардохт метавон бекор кард.
-          </p>
-          <p className="text-justify">
-            6.2. Дар сурати 2 (ду) моҳ пардохт накардани маблағ аз тарафи «Харидор», онгоҳ
-            «Фурӯшанда» метавонад дигар муштариро барои ҳуҷраи дар банди 2.2 шартномаи мазкур
-            аз нав бандад.
-          </p>
+          {isRent ? (
+            <>
+              <p className="text-justify">
+                6.1. Шартнома тибқи мувофиқаи тарафайн, инчунин бо хоҳиши яктарафаи ҳар кадом
+                тараф бо огоҳонии дигар тараф на камтар аз 30 рӯз пеш, бекор карда шуда
+                метавонад.
+              </p>
+              <p className="text-justify">
+                6.2. Дар сурати аз ҷониби «АРЕНДАТОР» 2 (ду) моҳ пай дар пай пардохт накардани
+                маблағи иҷора, «АРЕНДОДАТЕЛЬ» метавонад шартномаро якҷониба бекор намуда,
+                ҳуҷраро (хонаро) ба иҷорагири дигар супорад.
+              </p>
+              <p className="text-justify">
+                6.3. Баъди анҷоми мӯҳлати шартнома «АРЕНДАТОР» уҳдадор аст ҳуҷраро (хонаро) дар
+                ҳолати аслии он, бо назардошти кӯҳнашавии табиӣ, ба «АРЕНДОДАТЕЛЬ» баргардонад.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-justify">
+                6.1. Шартнома тибқи мувофиқаи тарафайн то пардохт намудан ва ё бо тартиби
+                яктарафа дар мавриди қобилияти имконнопазир рад намуда, «Харидор» изҳори
+                боздошти пардохт беш аз як моҳ аз муҳлати пардохт метавон бекор кард.
+              </p>
+              <p className="text-justify">
+                6.2. Дар сурати 2 (ду) моҳ пардохт накардани маблағ аз тарафи «Харидор», онгоҳ
+                «Фурӯшанда» метавонад дигар муштариро барои ҳуҷраи дар банди 2.2 шартномаи мазкур
+                аз нав бандад.
+              </p>
+            </>
+          )}
 
           <Section num={7} title="Форс-мажор" />
           <p className="text-justify">
@@ -568,10 +692,10 @@ export function ContractDocument({
             менамояд.
           </p>
           <p className="text-justify">
-            8.3. Ба Шартномаи мазкур номгӯи намуди корҳои иҷронамудаи «Фурӯшанда» замима
-            гардида, қисми ҷудонопазири шартнома ба шумор рафта, шартнома дар ду нусха бо
-            забони тоҷикӣ барои ҳар кадом тарафҳо тартиб дода шудааст ва эътибор ва ҳуқуқи
-            якхела дорад.
+            8.3.{" "}
+            {isRent
+              ? "Шартномаи мазкур дар ду нусха бо забони тоҷикӣ барои ҳар кадом тарафҳо тартиб дода шудааст ва эътибор ва ҳуқуқи якхела дорад."
+              : "Ба Шартномаи мазкур номгӯи намуди корҳои иҷронамудаи «Фурӯшанда» замима гардида, қисми ҷудонопазири шартнома ба шумор рафта, шартнома дар ду нусха бо забони тоҷикӣ барои ҳар кадом тарафҳо тартиб дода шудааст ва эътибор ва ҳуқуқи якхела дорад."}
           </p>
 
           <Section num={9} title="Суроғаи ҳуқуқӣ ва имзои тарафҳо" />
@@ -601,7 +725,7 @@ export function ContractDocument({
                 style={{ borderColor: PLUM, color: PLUM }}
                 className="border-b pb-1 text-[12.5px] font-bold tracking-wide"
               >
-                «ФУРӮШАНДА»
+                «{sellerLabelUpper}»
               </p>
               <p className="mt-1.5">Роҳбари ҶДММ «{companyName}»</p>
               <p className="text-[12.5px] font-bold">{director}</p>
@@ -642,7 +766,7 @@ export function ContractDocument({
                 style={{ borderColor: PLUM, color: PLUM }}
                 className="border-b pb-1 text-[12.5px] font-bold tracking-wide"
               >
-                «ХАРИДОР»
+                «{buyerLabelUpper}»
               </p>
               <p className="mt-1.5 text-[12.5px]">
                 <Var>{contract.client?.name ?? "____________"}</Var>
@@ -671,20 +795,24 @@ export function ContractDocument({
           </div>
         </div>
 
-        {/* ЗАМИМА forces its own fresh page again (print:break-before-page),
-            matching the original Word document -- reinstated on purpose.
-            Dropping it once (to stop it compounding whitespace with
-            break-inside-avoid above) traded one real defect for another: a
-            page that carries Section 9's signature+seal AND ЗАМИМА's own
-            signature pair together looks like two separate signing points
-            crammed onto one sheet. Section 9's cards were shrunk instead
-            (SignatureSlot h-10, tighter padding) so the pair fits after
-            clause 8.3 more often, which is the other half of the same fix --
-            leaving less room for the case this break-before-page still has
-            to cover. print:block stays regardless: this can run past one
-            page on its own (14-item list + two signature blocks), and a flex
-            container doesn't paginate that overflow onto the next page
-            cleanly. */}
+        {/* ЗАМИМА is the list of CONSTRUCTION works completed on a new
+            building being sold -- meaningless for a lease of already-
+            existing space, so it's skipped entirely for isRent rather than
+            relabelled the way the sections above are. Forces its own fresh
+            page again (print:break-before-page), matching the original Word
+            document -- reinstated on purpose. Dropping it once (to stop it
+            compounding whitespace with break-inside-avoid above) traded one
+            real defect for another: a page that carries Section 9's
+            signature+seal AND ЗАМИМА's own signature pair together looks
+            like two separate signing points crammed onto one sheet.
+            Section 9's cards were shrunk instead (SignatureSlot h-10,
+            tighter padding) so the pair fits after clause 8.3 more often,
+            which is the other half of the same fix -- leaving less room for
+            the case this break-before-page still has to cover. print:block
+            stays regardless: this can run past one page on its own
+            (14-item list + two signature blocks), and a flex container
+            doesn't paginate that overflow onto the next page cleanly. */}
+        {!isRent && (
         <div className="flex flex-col gap-1.5 px-10 pb-8 pt-7 print:break-before-page print:block">
           <div className="flex items-center gap-3">
             <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
@@ -753,6 +881,7 @@ export function ContractDocument({
             </div>
           </div>
         </div>
+        )}
 
         {/* Payment schedule -- only when the deal actually has one, and the
             LAST thing in the document, after ЗАМИМА, rather than a table
@@ -766,7 +895,7 @@ export function ContractDocument({
             splitting mid-row (page-break-inside: avoid); print:block is
             what lets it spill onto a FOLLOWING page cleanly if it runs
             past one on its own. */}
-        {contract.payment_type === "installment" && payments.length > 0 && (
+        {(contract.payment_type === "installment" || isRent) && payments.length > 0 && (
           <div className="flex flex-col gap-1.5 px-10 pb-8 pt-7 print:break-before-page print:block">
             <div className="flex items-center gap-3">
               <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
