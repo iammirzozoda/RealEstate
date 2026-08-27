@@ -334,26 +334,44 @@ export function ContractDocument({
     return rows;
   })();
 
+  // Watermark: the company logo, washed out and centred behind the text,
+  // same as the Word original. Deliberately an <img> rather than a CSS
+  // background -- browsers skip background graphics when printing unless
+  // the user ticks that box, but real images always print.
+  //
+  // Rendered once per PAGE-SIZED block (main body, ЗАМИМА, payment
+  // schedule) below rather than once for the whole document, each
+  // centred on that block's own height -- not because it looks nicer, but
+  // because a single instance centred on the combined height of all three
+  // blocks together only ever lands correctly on whichever one physical
+  // page happens to fall at that combined midpoint, leaving it missing or
+  // off-centre everywhere else. position:fixed would repeat it per page
+  // instead, but #contract-print-area's own print rules (globals.css)
+  // already tried and dropped that: Chrome doesn't paginate a fixed
+  // element, it just clips the same single viewport-height slice onto
+  // every page, which cuts the document off outright. Per-block absolute
+  // positioning is the part of that trade this component can still make:
+  // ЗАМИМА and the schedule table each force their own fresh page and are
+  // sized to fit one, so a watermark centred on either lands correctly;
+  // the main body is the one block that can still run to a second page on
+  // its own, same as before.
+  const watermark = settings.company_logo_url && (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={settings.company_logo_url}
+      alt=""
+      aria-hidden="true"
+      className="pointer-events-none absolute left-1/2 top-1/2 w-[62%] -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.12]"
+    />
+  );
+
   return (
     <div
       style={SERIF}
       className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-[11px] leading-[1.4] text-slate-900 shadow-sm print:rounded-none print:border-0 print:shadow-none"
     >
-      {/* Watermark: the company logo, washed out and centred behind the text,
-          same as the Word original. Deliberately an <img> rather than a CSS
-          background -- browsers skip background graphics when printing
-          unless the user ticks that box, but real images always print. */}
-      {settings.company_logo_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={settings.company_logo_url}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 w-[62%] -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.12]"
-        />
-      )}
-
-      {/* Everything sits above the watermark */}
+      <div className="relative">
+        {watermark}
       <div className="relative">
         {copyLabel && (
           <p className="px-6 py-1 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
@@ -832,6 +850,8 @@ export function ContractDocument({
             </div>
           </div>
         </div>
+      </div>
+      </div>
 
         {/* ЗАМИМА is the list of CONSTRUCTION works completed on a new
             building being sold -- meaningless for a lease of already-
@@ -851,6 +871,8 @@ export function ContractDocument({
             (14-item list + two signature blocks), and a flex container
             doesn't paginate that overflow onto the next page cleanly. */}
         {!isRent && (
+        <div className="relative">
+          {watermark}
         <div className="flex flex-col gap-1.5 px-10 pb-8 pt-7 print:break-before-page print:block">
           <div className="flex items-center gap-3">
             <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
@@ -862,10 +884,12 @@ export function ContractDocument({
           <p className="text-center text-[12.5px] font-bold">
             Номгӯи корҳои иҷрошаванда ва масолеҳҳои истифодашаванда
           </p>
-          {/* Narrower centred column than the page's own margins -- reads
-              as the lead-in sentence to the table below it, not as body
-              text running the full page width. */}
-          <p className="mx-auto mt-1 w-[91%] text-justify">
+          {/* Full text width, matching the rest of the document -- an
+              earlier pass narrowed this to its own centred column, which
+              looked fine on its own but put its margins visibly out of
+              line with every other page once printed as part of the same
+              booklet. */}
+          <p className="mt-1 text-justify">
             Корҳои сохтмонию васлкунии ба анҷом расонидашуда ва иншооти мазкур барои
             баҳрабардорӣ ва расмиятдарорӣ бо моликият пас аз анҷоми корҳои зайл омода
             ҳисобида мешаванд:
@@ -874,12 +898,11 @@ export function ContractDocument({
               circles/badges/colour in the marking itself: black rule under
               the header (bold) and under each category label, plain
               tabular numbers, a light grey zebra on item rows only. This
-              is the format an act of completed works actually uses.
-              Narrower centred column (82%, tighter than the intro
-              paragraph's 91%) so the table doesn't run edge to edge.
+              is the format an act of completed works actually uses. Full
+              text width, same reason as the paragraph above.
               break-inside-avoid keeps the whole table from splitting
               across the page boundary if it ever runs close to the edge. */}
-          <div className="mx-auto mt-2 w-[82%] break-inside-avoid">
+          <div className="mt-2 break-inside-avoid">
             <table className="w-full border-collapse text-[9px]">
               <thead>
                 <tr>
@@ -953,6 +976,7 @@ export function ContractDocument({
             </div>
           </div>
         </div>
+        </div>
         )}
 
         {/* Payment schedule -- only when the deal actually has one, and the
@@ -968,6 +992,8 @@ export function ContractDocument({
             what lets it spill onto a FOLLOWING page cleanly if it runs
             past one on its own. */}
         {(contract.payment_type === "installment" || isRent) && payments.length > 0 && (
+        <div className="relative">
+          {watermark}
           <div className="flex flex-col gap-1.5 px-10 pb-8 pt-7 print:break-before-page print:block">
             <div className="flex items-center gap-3">
               <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
@@ -976,14 +1002,17 @@ export function ContractDocument({
               </p>
               <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
             </div>
-            {/* Same narrower centred column and black/white marking as the
-                ЗАМИМА table above: bold black rule under the header instead
-                of plum, tabular numbers so № and Маблағ line up in their
-                columns, neutral grey zebra, a bold (not coloured) date for
-                a still-open row that's already past its due date, and a
-                heavier top rule on the total row instead of the previous
-                double-thin one. */}
-            <p className="mx-auto w-[91%] text-center">
+            {/* Same black/white marking as the ЗАМИМА table above: bold
+                black rule under the header instead of plum, tabular
+                numbers so № and Маблағ line up in their columns, neutral
+                grey zebra, a bold (not coloured) date for a still-open row
+                that's already past its due date, and a heavier top rule on
+                the total row instead of the previous double-thin one.
+                Full text width, matching every other page in the document
+                -- not narrowed like an earlier pass had it, which put its
+                margins visibly out of line with the rest of the printed
+                booklet. */}
+            <p className="text-center">
               Пардохтшуда: <b>{docAmount(paidSoFar, contract.currency)}</b>; боқимонда:{" "}
               <b>{docAmount(remainingSchedule, contract.currency)}</b>
               {unpaidRows.length > 0 && typicalMonthly != null && (
@@ -995,7 +1024,7 @@ export function ContractDocument({
               )}
               .
             </p>
-            <div className="mx-auto mt-1 w-[82%]">
+            <div className="mt-1">
               <table className="w-full border-collapse text-[12px]">
                 <thead>
                   <tr className="border-b-[1.6px] border-slate-900 text-left">
@@ -1037,8 +1066,8 @@ export function ContractDocument({
               </table>
             </div>
           </div>
+        </div>
         )}
-      </div>
     </div>
   );
 }
