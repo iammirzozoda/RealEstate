@@ -279,22 +279,60 @@ export function ContractDocument({
       ? Math.round((remainingSchedule / unpaidRows.length) * 100) / 100
       : null;
 
-  const worksList = [
-    "Ороиши намо тибқи лоиҳа.",
-    "Ороиши пурраи даромадгоҳи бино.",
-    "Зинаҳои печдор бо тахтасангҳо (кафел).",
-    "Насбкунии лифт.",
-    "Насби таҷҳизотҳои рӯшноӣ дар зинапояҳо ва даромадгоҳ.",
-    "Ободонии гирду атрофи бино.",
-    "Сохт ва омодасозии майдончаи бозиҳои кӯдакона.",
-    "Насби дарҳои хонаҳо аз масолеҳи оҳанӣ.",
-    "Тирезаҳо аз ПВХ, истеҳсоли Туркия.",
-    "Нуқтаи пайвасти синамо (телевизион).",
-    "Пайвасти ноқилҳои барқӣ то нуқтаи аввал.",
-    "Нуқтаи пайвасти обу корези (канализатсия).",
-    "Ноқили пайвасти дар даромадгоҳ бо дамафон (domofon).",
-    "Ноқилҳои пайвасти телефон, интернет ва WiFi.",
+  // Grouped into the same 4 practical categories as the work itself
+  // (facade/entrance, grounds, in-unit, utilities) rather than one flat
+  // run of 14 -- makes the printed table scannable, not just numbered.
+  const workCategories: { category: string; items: string[] }[] = [
+    {
+      category: "Намо ва даромадгоҳ",
+      items: [
+        "Ороиши намо тибқи лоиҳа.",
+        "Ороиши пурраи даромадгоҳи бино.",
+        "Зинаҳои печдор бо тахтасангҳо (кафел).",
+        "Насбкунии лифт.",
+      ],
+    },
+    {
+      category: "Ободонии ҳудуд",
+      items: [
+        "Насби таҷҳизотҳои рӯшноӣ дар зинапояҳо ва даромадгоҳ.",
+        "Ободонии гирду атрофи бино.",
+        "Сохт ва омодасозии майдончаи бозиҳои кӯдакона.",
+      ],
+    },
+    {
+      category: "Дохили хона",
+      items: ["Насби дарҳои хонаҳо аз масолеҳи оҳанӣ.", "Тирезаҳо аз ПВХ, истеҳсоли Туркия."],
+    },
+    {
+      category: "Шабакаҳои муҳандисӣ",
+      items: [
+        "Нуқтаи пайвасти синамо (телевизион).",
+        "Пайвасти ноқилҳои барқӣ то нуқтаи аввал.",
+        "Нуқтаи пайвасти обу корези (канализатсия).",
+        "Ноқили пайвасти дар даромадгоҳ бо дамафон (domofon).",
+        "Ноқилҳои пайвасти телефон, интернет ва WiFi.",
+      ],
+    },
   ];
+  // Flattened once, with a running № carried across category boundaries,
+  // so the table body below is a plain .map over category-header rows and
+  // numbered-item rows instead of nested maps with hand-tracked counters.
+  type WorkRow =
+    | { kind: "cat"; key: string; label: string }
+    | { kind: "item"; key: string; n: number; text: string };
+  const worksRows: WorkRow[] = (() => {
+    const rows: WorkRow[] = [];
+    let n = 0;
+    for (const group of workCategories) {
+      rows.push({ kind: "cat", key: `cat-${group.category}`, label: group.category });
+      for (const item of group.items) {
+        n += 1;
+        rows.push({ kind: "item", key: `item-${n}`, n, text: item });
+      }
+    }
+    return rows;
+  })();
 
   return (
     <div
@@ -824,30 +862,59 @@ export function ContractDocument({
           <p className="text-center text-[12.5px] font-bold">
             Номгӯи корҳои иҷрошаванда ва масолеҳҳои истифодашаванда
           </p>
-          <p className="mt-1 text-justify">
+          {/* Narrower centred column than the page's own margins -- reads
+              as the lead-in sentence to the table below it, not as body
+              text running the full page width. */}
+          <p className="mx-auto mt-1 w-[91%] text-justify">
             Корҳои сохтмонию васлкунии ба анҷом расонидашуда ва иншооти мазкур барои
             баҳрабардорӣ ва расмиятдарорӣ бо моликият пас аз анҷоми корҳои зайл омода
             ҳисобида мешаванд:
           </p>
-          {/* One column, per request -- was two (see git history for why:
-              14 short items in a single column left the right half of the
-              page empty). break-inside-avoid keeps the whole list from
-              splitting across the page boundary if it ever runs close to
-              the edge; text-[11px] matches the body size used everywhere
-              else in the document (sections 1-9), not the 12px this list
-              used to run at on its own. */}
-          <div className="mt-2 flex flex-col gap-y-0.5 break-inside-avoid">
-            {worksList.map((w, i) => (
-              <div key={w} className="flex items-baseline gap-2 py-[2px]">
-                <span
-                  style={{ color: PLUM }}
-                  className="shrink-0 text-[10px] font-bold tabular-nums"
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="text-[11px]">{w}</span>
-              </div>
-            ))}
+          {/* A smeta-style table, not a numbered list -- per request, no
+              circles/badges/colour in the marking itself: black rule under
+              the header (bold) and under each category label, plain
+              tabular numbers, a light grey zebra on item rows only. This
+              is the format an act of completed works actually uses.
+              Narrower centred column (82%, tighter than the intro
+              paragraph's 91%) so the table doesn't run edge to edge.
+              break-inside-avoid keeps the whole table from splitting
+              across the page boundary if it ever runs close to the edge. */}
+          <div className="mx-auto mt-2 w-[82%] break-inside-avoid">
+            <table className="w-full border-collapse text-[9px]">
+              <thead>
+                <tr>
+                  <th className="w-6 border-b-[1.6px] border-slate-900 py-1.5 pr-1 text-center font-bold">
+                    №
+                  </th>
+                  <th className="border-b-[1.6px] border-slate-900 py-1.5 pl-2 text-left font-bold tracking-wide">
+                    Номгӯи корҳо
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {worksRows.map((row) =>
+                  row.kind === "cat" ? (
+                    <tr key={row.key}>
+                      <td
+                        colSpan={2}
+                        className="border-b-[0.6px] border-slate-900 pb-1 pt-1.5 text-[7.9px] font-bold uppercase tracking-[0.08em]"
+                      >
+                        {row.label}
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={row.key} className="even:bg-slate-50">
+                      <td className="border-b-[0.6px] border-slate-300 py-1 pr-1 text-center font-bold tabular-nums">
+                        {row.n}
+                      </td>
+                      <td className="border-b-[0.6px] border-slate-300 py-1 pl-2 text-left">
+                        {row.text}
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
           </div>
 
           {/* Both cells are flex-col with the signature group pushed to the
