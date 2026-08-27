@@ -126,11 +126,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    // h-screen + overflow-hidden pins the shell to the viewport: the
-    // sidebar and header never move, only <main> scrolls. Print must undo
-    // all of it -- a fixed-height scroll container clips a printed
-    // document to one viewport worth of content.
-    <div className="flex h-screen w-full overflow-hidden print:block print:h-auto print:overflow-visible">
+    // h-dvh (not h-screen/100vh) + overflow-hidden pins the shell to the
+    // viewport: the sidebar and header never move, only <main> scrolls.
+    // 100vh on a phone browser is the LARGEST the viewport ever gets, with
+    // the address bar collapsed -- so a shell pinned to h-screen sat
+    // taller than the visible area whenever the address bar was showing,
+    // pushing the bottom nav bar partway offscreen until the user
+    // scrolled it into view. 100dvh tracks the browser chrome instead.
+    // Print must undo all of it -- a fixed-height scroll container clips
+    // a printed document to one viewport worth of content.
+    <div className="flex h-dvh w-full overflow-hidden print:block print:h-auto print:overflow-visible">
       <aside className="app-sidebar hero-gradient hero-panel relative hidden h-full w-60 shrink-0 overflow-y-auto sm:flex sm:flex-col print:hidden">
         {/* Same slow-drifting glow language as the hero, so the sidebar
             belongs to the same living surface. Dark mode drops it -- see
@@ -219,7 +224,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex h-full min-w-0 flex-1 flex-col print:block print:h-auto">
         <InstallPrompt />
         <OfflineBanner />
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-3 sm:justify-end print:hidden">
+        {/* pt- adds the notch/Dynamic Island's own height on top of the
+            existing py-3 rather than replacing it -- max() so a phone with
+            no cutout (safe-area-inset-top: 0) still gets the normal
+            padding instead of collapsing to 0. The bottom nav below
+            already does the equivalent for the home-indicator area; this
+            was the one edge that didn't yet. */}
+        <header
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+          className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border-c)] bg-[var(--surface-1)] px-4 pb-3 sm:justify-end print:hidden"
+        >
           <Link
             href="/"
             className="flex min-w-0 flex-1 items-center gap-2 transition-opacity hover:opacity-80 sm:hidden"

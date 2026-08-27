@@ -407,7 +407,7 @@ export default function DebtorsPage() {
       {totalCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-[var(--ink-4)]">{t.debtors.sortLabel}:</span>
-          <ControlGroup size="sm">
+          <ControlGroup size="sm" scrollable>
             {/* Filter by ЖК, in the same glued control as the sort options. */}
             <select
               value={buildingId}

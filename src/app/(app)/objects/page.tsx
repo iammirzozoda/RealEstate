@@ -173,7 +173,7 @@ export default function ObjectsPage() {
             their four in one -- a dropdown is still the same bordered
             ControlGroup box as every pill row, just the right widget for
             this many options. */}
-        <ControlGroup>
+        <ControlGroup scrollable>
           <select
             value={typeFilter}
             onChange={(e) => onFilterChange(setTypeFilter)(e.target.value as ObjectType | "all")}

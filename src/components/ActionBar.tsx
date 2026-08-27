@@ -40,21 +40,40 @@ export const SIZE_CLASSES: Record<ToolbarSize, { button: string; icon: string }>
 // Deliberately NOT `overflow-hidden`: the tooltips below each icon have to be
 // able to escape it. Rounding lives on the individual children instead, so
 // hover backgrounds still look right at the ends.
+//
+// `scrollable` opts a group into `overflow-x-auto` instead of `w-fit` -- for
+// rows that can genuinely outgrow a phone's width (a building's status +
+// room-count + gap pills together routinely runs past 375px) and would
+// otherwise just get cut off with no way to reach the rest. Off by default:
+// setting overflow-x on an element forces its overflow-y to `auto` too (a
+// real CSS rule, not a Tailwind quirk), which WOULD clip an IconAction
+// tooltip poking out below it -- so this is only for groups built entirely
+// from PillButton/plain content, never one holding an IconAction.
+//
+// `wrap` is the version for groups that DO hold an IconAction (a tooltip
+// that must stay visible rules out `scrollable`): plain `flex-wrap`, no
+// overflow property touched at all, so a long toolbar (search + date range
+// + building + sort icons, say) breaks onto a second line inside the same
+// bordered box on a narrow phone instead of running off the edge.
 export function ControlGroup({
   children,
   size = "md",
+  scrollable = false,
+  wrap = false,
   className = "",
 }: {
   children: ReactNode;
   size?: ToolbarSize;
+  scrollable?: boolean;
+  wrap?: boolean;
   className?: string;
 }) {
   return (
     <SizeContext.Provider value={size}>
       <div
-        className={`inline-flex w-fit items-center rounded-lg border border-[var(--border-strong-c)] bg-[var(--surface-1)] ${
-          size === "sm" ? "gap-0.5 p-0.5" : "gap-1 p-1"
-        } ${className}`}
+        className={`inline-flex items-center rounded-lg border border-[var(--border-strong-c)] bg-[var(--surface-1)] ${
+          scrollable ? "max-w-full overflow-x-auto" : wrap ? "max-w-full flex-wrap" : "w-fit"
+        } ${size === "sm" ? "gap-0.5 p-0.5" : "gap-1 p-1"} ${className}`}
       >
         {children}
       </div>

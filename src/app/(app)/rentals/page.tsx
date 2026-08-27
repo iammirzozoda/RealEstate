@@ -171,7 +171,7 @@ export default function RentalsPage() {
           pinned left and the button pinned right with a gap of empty row
           between them. */}
       <div className="flex flex-wrap items-center justify-end gap-3">
-        <ControlGroup>
+        <ControlGroup scrollable>
           {RENTAL_STATUS_FILTERS.map((s) => (
             <PillButton
               key={s}

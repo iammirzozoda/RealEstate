@@ -263,8 +263,12 @@ export default function ClientsPage() {
           className="h-10 min-w-[160px] flex-1 rounded-lg border border-[var(--field-border)] bg-[var(--field-bg)] px-3 text-sm text-[var(--ink-1)] transition-colors focus:border-[var(--field-focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--field-focus-ring)]"
         />
         {/* Dates and sort are ONE glued control, not two floating pills.
-            List page, so full size; a divider keeps the two jobs legible. */}
-        <ControlGroup>
+            List page, so full size; a divider keeps the two jobs legible.
+            wrap: this can run to 6+ items (calendar+dates, clear, building
+            select, four sort icons) -- on a phone that's wider than the
+            screen, so it breaks onto a second line inside the same box
+            instead of running off the edge. */}
+        <ControlGroup wrap>
           <span className="pl-1.5 pr-0.5 text-[var(--ink-5)]" aria-hidden="true">
             <CalendarIcon className="h-[19px] w-[19px]" />
           </span>

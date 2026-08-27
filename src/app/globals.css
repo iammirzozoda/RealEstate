@@ -56,6 +56,22 @@
   --wash-sky-ink: #0369a1;
   --wash-violet: #ede9fe;
   --wash-violet-ink: #6d28d9;
+  /* Shakhmatka cell fills -- same colour as the matching --wash-* by
+     default (nothing changes for light mode), overridden separately in
+     dark mode below. Kept apart from --wash-* on purpose: those stay
+     tuned for a small text pill/badge (audit log, status chips), where a
+     low-alpha tint over a bright surface is exactly right -- but a
+     shakhmatka cell is a big filled tile, and the SAME low-alpha tint
+     read against the dark theme's near-black surface instead of a badge's
+     usual "murky dark green/maroon", not the cheerful pastel a light-mode
+     cell shows. Renaming those to fix the cell without touching the
+     dozen unrelated badges that share --wash-* would have been a much
+     bigger, riskier change than adding one more token per hue. */
+  --cell-emerald: var(--wash-emerald);
+  --cell-amber: var(--wash-amber);
+  --cell-rose: var(--wash-rose);
+  --cell-sky: var(--wash-sky);
+  --cell-violet: var(--wash-violet);
   /* The one fixed yellow, available in both modes and independent of the
      company's hero theme -- for the handful of spots (BackLink's hover)
      that want to read as "the Лимӯ accent" specifically, not "whatever
@@ -113,6 +129,19 @@
   --wash-sky-ink: #38bdf8;
   --wash-violet: rgba(167, 139, 250, 0.18);
   --wash-violet-ink: #c4b5fd;
+  /* Brighter than --wash-*, not just more of the same tint: built from the
+     lighter *-ink hue (the one already picked for legibility against dark,
+     e.g. #34d399 not the darker #10b981 --wash-emerald blends toward) at a
+     higher alpha, so the tile itself reads as a lit pastel square instead
+     of a dim, muddy one. Request was specifically "brighter, not more
+     saturated" -- a stronger tint of the SAME dark base (higher alpha on
+     --wash-emerald's own rgba(16,185,129,...)) would have gone the other
+     way, more intense rather than lighter. */
+  --cell-emerald: rgba(52, 211, 153, 0.3);
+  --cell-amber: rgba(251, 191, 36, 0.28);
+  --cell-rose: rgba(251, 113, 133, 0.28);
+  --cell-sky: rgba(56, 189, 248, 0.28);
+  --cell-violet: rgba(196, 181, 253, 0.28);
   --side-active-bg: #232326;
   --side-active-ink: #f5f5f0;
   --side-active-icon: #facc15;

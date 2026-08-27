@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
-import { STATUS_COLORS, STATUS_PROGRESS_COLORS, formatArea } from "@/lib/objects/format";
+import { CELL_COLORS, STATUS_COLORS, STATUS_PROGRESS_COLORS, formatArea } from "@/lib/objects/format";
 import { STATUS_HUES } from "@/components/charts/palette";
 import { formatCurrency, type Currency } from "@/lib/currency";
 import { computeApartmentNumbers } from "@/lib/buildings/apartmentNumbers";
@@ -211,7 +211,7 @@ function UnitCell({
           isPending ? "animate-pulse opacity-60" : ""
         } ${dimmed ? "opacity-20 saturate-0" : ""} ${
           typeMeta ? `${typeMeta.ring} ring-offset-1` : ""
-        } ${STATUS_COLORS[unit.status]}`}
+        } ${CELL_COLORS[unit.status]}`}
       >
         <span>
           {typeMeta?.prefix}
@@ -857,7 +857,7 @@ export function ShakhmatkaFilters({
   const anyActive = statusFilter !== null || roomsFilter !== null || gapFilter !== null;
 
   return (
-    <ControlGroup size="sm">
+    <ControlGroup size="sm" scrollable>
       {presentStatuses.map((status) => {
         const active = statusFilter === status;
         return (

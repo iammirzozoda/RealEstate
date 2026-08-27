@@ -19,6 +19,20 @@ export const STATUS_COLORS: Record<ObjectStatus, string> = {
   in_progress: "bg-[var(--wash-violet)] text-[var(--wash-violet-ink)]",
 };
 
+// Same idea as STATUS_COLORS, for the shakhmatka's own big filled tiles
+// rather than a small status badge/pill. Same text colour (already legible
+// against dark), a brighter background (--cell-*, globals.css): a badge's
+// low-alpha tint reads fine as a small chip, but blown up to a whole cell
+// in dark mode it read as a dim, murky green/maroon rather than the light
+// pastel a light-mode cell shows.
+export const CELL_COLORS: Record<ObjectStatus, string> = {
+  available: "bg-[var(--cell-emerald)] text-[var(--wash-emerald-ink)]",
+  reserved: "bg-[var(--cell-amber)] text-[var(--wash-amber-ink)]",
+  sold: "bg-[var(--cell-rose)] text-[var(--wash-rose-ink)]",
+  rented: "bg-[var(--cell-sky)] text-[var(--wash-sky-ink)]",
+  in_progress: "bg-[var(--cell-violet)] text-[var(--wash-violet-ink)]",
+};
+
 // The payment bar drawn along the bottom of a shakhmatka cell, in that cell's
 // OWN hue -- same colour, just stronger. A single green fill sitting on a rose
 // "продано" cell read as a second, unrelated colour system laid over the

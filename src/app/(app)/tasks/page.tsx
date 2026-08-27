@@ -74,7 +74,7 @@ export default function TasksPage() {
           separate control up in the title row with a gap of empty header
           between it and everything else that touches this list. */}
       <div className="flex flex-wrap items-center justify-end gap-3">
-        <ControlGroup>
+        <ControlGroup scrollable>
           <PillButton
             label={t.tasks.filters.allStatuses}
             active={statusFilter === "all"}
