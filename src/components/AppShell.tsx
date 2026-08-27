@@ -37,6 +37,9 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
   buildings: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-[18px] w-[18px]"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
   ),
+  rentals: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-[18px] w-[18px]"><circle cx="8" cy="15" r="4"/><path d="M11 12 20 3M17 6l2 2M14 9l2 2"/></svg>
+  ),
   settings: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-[18px] w-[18px]"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4L5.3 5.3"/></svg>
   ),
@@ -52,6 +55,7 @@ const navItems = [
   { href: "/debtors", key: "debtors" as const },
   { href: "/tasks", key: "tasks" as const },
   { href: "/buildings", key: "buildings" as const },
+  { href: "/rentals", key: "rentals" as const },
   { href: "/settings", key: "settings" as const },
 ];
 

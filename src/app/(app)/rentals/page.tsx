@@ -1,50 +1,123 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useRole } from "@/lib/auth/useRole";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { SetupNotice } from "@/components/SetupNotice";
+import { ContractBookingModal } from "@/components/ContractBookingModal";
+import { ControlGroup, PillButton } from "@/components/ActionBar";
 import { formatCurrency } from "@/lib/currency";
 import { formatArea } from "@/lib/objects/format";
 import { STATUS_HUES } from "@/components/charts/palette";
-import { OBJECT_TYPES, type ObjectType, type PropertyObject } from "@/lib/objects/types";
+import { OBJECT_TYPES, type ObjectStatus, type ObjectType, type PropertyObject } from "@/lib/objects/types";
 import type { UnitContractInfo } from "@/components/ShakhmatkaGrid";
 
-// A separate section from the shakhmatka, after it on the same page --
-// units meant to be rented out (a warehouse, storage) rather than sold.
-// Kept deliberately simple: a plain list, not a spatial grid, since a row
-// of storage units doesn't have the floor/position layout an apartment
-// grid is drawn from. Each unit's own lease (term, monthly rate) is set
-// per contract via the same ContractBookingModal the shakhmatka uses --
-// nothing here assumes every unit shares the same term.
-export function RentalUnitsSection({
-  buildingId,
-  units,
-  contractsByUnit,
-  canEdit,
-  onBookUnit,
-  onAdded,
-  onDeleted,
-}: {
-  buildingId: string;
-  units: PropertyObject[];
-  contractsByUnit: Record<string, UnitContractInfo>;
-  canEdit: boolean;
-  onBookUnit: (unit: PropertyObject) => void;
-  onAdded: () => void;
-  onDeleted: () => void;
-}) {
+type RentalUnit = PropertyObject & { building: { name: string } | null };
+
+const RENTAL_STATUS_FILTERS: Array<ObjectStatus | "all"> = ["all", "available", "reserved", "rented"];
+
+// Its own page, not nested under a building -- rent is a separate line of
+// work from the shakhmatka (a warehouse/storage unit rarely belongs to the
+// same floor/position layout an apartment grid is drawn from, and staff
+// managing leases across every building shouldn't have to open each one to
+// see what's rented). Every object here has listing_type = 'rent'; the
+// shakhmatka never shows one, see buildings/[id]/page.tsx's saleUnits.
+export default function RentalsPage() {
   const { t } = useLocale();
+  const { role } = useRole();
   const confirm = useConfirm();
   const pathname = usePathname();
+  const configured = isSupabaseConfigured();
+  const canEdit = role === "admin";
+
+  const [units, setUnits] = useState<RentalUnit[]>([]);
+  const [contractsByUnit, setContractsByUnit] = useState<Record<string, UnitContractInfo>>({});
+  const [buildings, setBuildings] = useState<Array<{ id: string; name: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<ObjectStatus | "all">("all");
+  const [bookingUnit, setBookingUnit] = useState<PropertyObject | null>(null);
+
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [area, setArea] = useState("");
   const [type, setType] = useState<ObjectType>("commercial");
+  const [addBuildingId, setAddBuildingId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!configured) return;
+    setLoading(true);
+    const supabase = createClient();
+    const [unitsRes, contractsRes, paymentsRes, buildingsRes] = await Promise.all([
+      supabase
+        .schema("crm")
+        .from("objects")
+        .select("*, building:buildings(name)")
+        .eq("listing_type", "rent")
+        .order("name"),
+      supabase
+        .schema("crm")
+        .from("contracts")
+        .select(
+          "id, object_id, amount, paid_amount, currency, client:clients(name, phone, source), object:objects!inner(listing_type)"
+        )
+        .eq("object.listing_type", "rent"),
+      supabase
+        .schema("crm")
+        .from("contract_payments")
+        .select("contract_id, contract:contracts!inner(object:objects!inner(listing_type))")
+        .eq("paid", true)
+        .eq("contract.object.listing_type", "rent"),
+      supabase.schema("crm").from("buildings").select("id, name").order("name"),
+    ]);
+
+    setUnits((unitsRes.data ?? []) as unknown as RentalUnit[]);
+    setBuildings((buildingsRes.data ?? []) as Array<{ id: string; name: string }>);
+
+    const contractRows = (contractsRes.data ?? []) as unknown as Array<{
+      id: string;
+      object_id: string;
+      amount: number;
+      paid_amount: number;
+      currency: UnitContractInfo["currency"];
+      client: { name: string; phone: string | null; source: string | null } | null;
+    }>;
+    const paymentsCountByContract: Record<string, number> = {};
+    for (const p of (paymentsRes.data ?? []) as Array<{ contract_id: string }>) {
+      paymentsCountByContract[p.contract_id] = (paymentsCountByContract[p.contract_id] ?? 0) + 1;
+    }
+    const map: Record<string, UnitContractInfo> = {};
+    for (const c of contractRows) {
+      map[c.object_id] = {
+        id: c.id,
+        clientName: c.client?.name ?? "—",
+        clientPhone: c.client?.phone ?? null,
+        amount: c.amount,
+        paid: c.paid_amount,
+        remaining: c.amount - c.paid_amount,
+        currency: c.currency,
+        paymentsCount: paymentsCountByContract[c.id] ?? 0,
+        isQuickBooking: false,
+      };
+    }
+    setContractsByUnit(map);
+    setLoading(false);
+  }, [configured]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filteredUnits = useMemo(
+    () => (statusFilter === "all" ? units : units.filter((u) => u.status === statusFilter)),
+    [units, statusFilter]
+  );
 
   const cashDesk = (contractId: string) =>
     `/contracts/${contractId}/payments?from=${encodeURIComponent(pathname)}`;
@@ -60,7 +133,7 @@ export function RentalUnitsSection({
       status: "available",
       listing_type: "rent",
       area: area ? Number(area) : null,
-      building_id: buildingId,
+      building_id: addBuildingId || null,
       span: 1,
     });
     setSubmitting(false);
@@ -70,8 +143,9 @@ export function RentalUnitsSection({
     }
     setName("");
     setArea("");
+    setAddBuildingId("");
     setAdding(false);
-    onAdded();
+    load();
   };
 
   const handleDelete = async (unit: PropertyObject) => {
@@ -79,25 +153,34 @@ export function RentalUnitsSection({
     if (!ok) return;
     const supabase = createClient();
     await supabase.schema("crm").from("objects").delete().eq("id", unit.id);
-    onDeleted();
+    load();
   };
 
-  if (units.length === 0 && !canEdit) return null;
-
   return (
-    <div className="mt-2 flex flex-col gap-3 border-t border-[var(--border-c2)] pt-5">
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="text-2xl font-semibold">{t.buildings.rental.title}</h1>
+        <p className="text-sm text-[var(--ink-4)]">{t.buildings.rental.subtitle}</p>
+      </div>
+
+      {!configured && <SetupNotice />}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-base font-semibold text-[var(--ink-1)]">
-            {t.buildings.rental.title}
-          </h2>
-          <p className="text-xs text-[var(--ink-4)]">{t.buildings.rental.subtitle}</p>
-        </div>
+        <ControlGroup>
+          {RENTAL_STATUS_FILTERS.map((s) => (
+            <PillButton
+              key={s}
+              label={s === "all" ? t.tasks.filters.allStatuses : t.objects.statuses[s]}
+              active={statusFilter === s}
+              onClick={() => setStatusFilter(s)}
+            />
+          ))}
+        </ControlGroup>
         {canEdit && !adding && (
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="w-fit rounded-lg border border-[var(--field-border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-2)] transition-colors hover:bg-[var(--hover-c)]"
+            className="w-fit rounded-lg border border-[var(--field-border)] px-3 py-1.5 text-sm font-medium text-[var(--ink-2)] transition-colors hover:bg-[var(--hover-c)]"
           >
             {t.buildings.rental.add}
           </button>
@@ -107,7 +190,7 @@ export function RentalUnitsSection({
       {adding && (
         <form
           onSubmit={handleAdd}
-          className="flex flex-wrap items-end gap-3 rounded-lg border border-[var(--border-c)] bg-[var(--surface-2)] p-3"
+          className="flex flex-wrap items-end gap-3 rounded-lg border border-[var(--border-c)] bg-[var(--surface-2)] p-3.5"
         >
           <label className="flex flex-col gap-1 text-xs">
             <span className="font-medium text-[var(--ink-3)]">{t.buildings.rental.name}</span>
@@ -119,6 +202,21 @@ export function RentalUnitsSection({
               placeholder={t.buildings.rental.namePlaceholder}
               className="h-9 rounded-lg border border-[var(--field-border)] bg-[var(--field-bg)] px-2.5 text-sm text-[var(--ink-1)] focus:border-[var(--field-focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--field-focus-ring)]"
             />
+          </label>
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-medium text-[var(--ink-3)]">{t.buildings.rental.building}</span>
+            <select
+              value={addBuildingId}
+              onChange={(e) => setAddBuildingId(e.target.value)}
+              className="h-9 rounded-lg border border-[var(--field-border)] bg-[var(--field-bg)] px-2.5 text-sm text-[var(--ink-1)] focus:border-[var(--field-focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--field-focus-ring)]"
+            >
+              <option value="">{t.buildings.rental.noBuilding}</option>
+              {buildings.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="flex flex-col gap-1 text-xs">
             <span className="font-medium text-[var(--ink-3)]">{t.buildings.rental.area}</span>
@@ -165,11 +263,13 @@ export function RentalUnitsSection({
         </form>
       )}
 
-      {units.length === 0 ? (
+      {loading ? (
+        <p className="text-[var(--ink-5)]">{t.common.loading}</p>
+      ) : filteredUnits.length === 0 ? (
         <p className="text-sm text-[var(--ink-5)]">{t.buildings.rental.empty}</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {units.map((unit) => {
+          {filteredUnits.map((unit) => {
             const contractInfo = contractsByUnit[unit.id];
             return (
               <div
@@ -182,9 +282,15 @@ export function RentalUnitsSection({
                     style={{ background: STATUS_HUES[unit.status].solid }}
                   />
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-[var(--ink-1)]">{unit.name}</p>
+                    <Link
+                      href={`/objects/${unit.id}`}
+                      className="-mx-1 truncate rounded px-1 font-medium text-[var(--ink-1)] transition-colors hover:bg-[var(--hover-c2)]"
+                    >
+                      {unit.name}
+                    </Link>
                     <p className="text-xs text-[var(--ink-4)]">
                       {[
+                        unit.building?.name,
                         t.objects.types[unit.type],
                         unit.area != null ? formatArea(unit.area) : null,
                         t.objects.statuses[unit.status],
@@ -229,19 +335,33 @@ export function RentalUnitsSection({
                         {t.common.confirmDeleteBtn}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => onBookUnit(unit)}
-                      className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:brightness-110 active:scale-[0.98]"
-                    >
-                      {t.buildings.rental.bookAction}
-                    </button>
+                    {role !== "director" && (
+                      <button
+                        type="button"
+                        onClick={() => setBookingUnit(unit)}
+                        className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:brightness-110 active:scale-[0.98]"
+                      >
+                        {t.buildings.rental.bookAction}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
         </div>
+      )}
+
+      {bookingUnit && (
+        <ContractBookingModal
+          unit={bookingUnit}
+          buildingName={
+            (units.find((u) => u.id === bookingUnit.id) as RentalUnit | undefined)?.building?.name ?? null
+          }
+          apartmentNumber={undefined}
+          onClose={() => setBookingUnit(null)}
+          onBooked={load}
+        />
       )}
     </div>
   );

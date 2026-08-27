@@ -20,7 +20,6 @@ import { UnitEditModal } from "@/components/UnitEditModal";
 import { Toast, type ToastType } from "@/components/Toast";
 import { ConstructionStatusBadge } from "@/components/ConstructionStatusBadge";
 import { DuplicateBuildingModal } from "@/components/DuplicateBuildingModal";
-import { RentalUnitsSection } from "@/components/RentalUnitsSection";
 import { PlanViewerModal } from "@/components/PlanViewerModal";
 import {
   DocumentIcon,
@@ -53,10 +52,9 @@ export default function BuildingDetailPage() {
   // The shakhmatka (and everything numbered/laid-out like one -- filters,
   // apartment numbering, "duplicate building") only ever means units meant
   // for SALE. Units marked listing_type = 'rent' (warehouses, storage --
-  // whatever a building rents out instead of sells) live in their own
-  // section below it instead, never mixed into the grid.
+  // whatever this building rents out instead of sells) live entirely on
+  // their own page (/rentals, across every building at once), not here.
   const saleUnits = useMemo(() => units.filter((u) => u.listing_type !== "rent"), [units]);
-  const rentalUnits = useMemo(() => units.filter((u) => u.listing_type === "rent"), [units]);
   const [contractsByUnit, setContractsByUnit] = useState<Record<string, UnitContractInfo>>(
     {}
   );
@@ -589,16 +587,6 @@ export default function BuildingDetailPage() {
             statusFilter={statusFilter}
             roomsFilter={roomsFilter}
             gapFilter={gapFilter}
-          />
-
-          <RentalUnitsSection
-            buildingId={building.id}
-            units={rentalUnits}
-            contractsByUnit={contractsByUnit}
-            canEdit={role === "admin"}
-            onBookUnit={setBookingUnit}
-            onAdded={loadUnits}
-            onDeleted={loadUnits}
           />
 
           {addingUnit && (

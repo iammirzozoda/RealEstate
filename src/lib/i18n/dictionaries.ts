@@ -32,6 +32,7 @@ export const dictionaries = {
       tasks: "Задачи",
       contracts: "Договоры",
       buildings: "Шахматка",
+      rentals: "Аренда",
       settings: "Настройки",
     },
     search: {
@@ -634,6 +635,8 @@ export const dictionaries = {
         add: "+ Добавить помещение",
         name: "Название",
         namePlaceholder: "Склад 1",
+        building: "Здание",
+        noBuilding: "Без здания",
         area: "Площадь, м²",
         type: "Тип",
         save: "Добавить",
@@ -991,6 +994,7 @@ export const dictionaries = {
       tasks: "Вазифаҳо",
       contracts: "Шартномаҳо",
       buildings: "Шахмата",
+      rentals: "Иҷора",
       settings: "Танзимот",
     },
     search: {
@@ -1591,6 +1595,8 @@ export const dictionaries = {
         add: "+ Иловаи хона",
         name: "Ном",
         namePlaceholder: "Анбор 1",
+        building: "Бино",
+        noBuilding: "Бе бино",
         area: "Масоҳат, м²",
         type: "Навъ",
         save: "Илова кардан",
