@@ -251,11 +251,11 @@ export function ContractPayments({
       : 0;
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="flex flex-col gap-4 rounded-xl border border-[var(--border-c)] bg-[var(--surface-1)] p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-700">{t.contracts.payments.title}</p>
+        <p className="text-sm font-semibold text-[var(--ink-2)]">{t.contracts.payments.title}</p>
         {planRows.length > 0 && (
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
+          <span className="rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-xs font-medium text-[var(--ink-4)]">
             {coveredCount}/{planRows.length}
           </span>
         )}
@@ -266,11 +266,11 @@ export function ContractPayments({
           printed copy of this contract until someone happens to expand the
           schedule and add it up by hand. */}
       {mismatch && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3">
-          <p className="text-xs font-semibold text-amber-800">
+        <div className="rounded-lg border border-[var(--wash-amber-border)] bg-[var(--wash-amber)] px-3.5 py-3">
+          <p className="text-xs font-semibold text-[var(--wash-amber-ink)]">
             {t.contracts.payments.mismatchTitle}
           </p>
-          <p className="mt-1 text-xs text-amber-800">
+          <p className="mt-1 text-xs text-[var(--wash-amber-ink)]">
             {t.contracts.payments.mismatchHint
               .replace("{schedule}", formatCurrency(scheduleTotal, contract.currency))
               .replace("{contract}", formatCurrency(contract.amount, contract.currency))}
@@ -299,7 +299,7 @@ export function ContractPayments({
           className="relative flex flex-col gap-3 overflow-hidden rounded-xl border-2 border-brand-soft p-4 shadow-sm"
           style={{
             background:
-              "linear-gradient(135deg, color-mix(in srgb, var(--brand) 10%, white), color-mix(in srgb, var(--brand) 3%, white))",
+              "linear-gradient(135deg, color-mix(in srgb, var(--brand) 10%, var(--surface-1)), color-mix(in srgb, var(--brand) 3%, var(--surface-1)))",
           }}
         >
           <span
@@ -308,14 +308,14 @@ export function ContractPayments({
             style={{ background: "var(--brand)" }}
           />
           <p className="relative flex items-center gap-2 text-sm font-bold text-brand">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-sm text-white shadow-sm">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-sm text-[var(--on-brand)] shadow-sm">
               +
             </span>
             {t.contracts.payments.recordTitle}
           </p>
           <div className="relative flex flex-wrap items-end gap-2">
             <label className="flex flex-1 flex-col gap-1 text-xs">
-              <span className="font-semibold text-slate-600">{t.contracts.payments.amount}</span>
+              <span className="font-semibold text-[var(--ink-3)]">{t.contracts.payments.amount}</span>
               <input
                 type="number"
                 min="0"
@@ -323,11 +323,11 @@ export function ContractPayments({
                 value={newAmount}
                 onChange={(e) => setNewAmount(e.target.value)}
                 placeholder="0"
-                className="h-12 w-full rounded-lg border-2 border-slate-200 bg-white px-3 text-lg font-bold text-slate-900 transition-colors focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand)_25%,transparent)]"
+                className="h-12 w-full rounded-lg border-2 border-[var(--field-border)] bg-[var(--field-bg)] px-3 text-lg font-bold text-[var(--ink-1)] transition-colors focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand)_25%,transparent)]"
               />
             </label>
             <label className="flex flex-col gap-1 text-xs">
-              <span className="font-semibold text-slate-600">{t.contracts.payments.dueDate}</span>
+              <span className="font-semibold text-[var(--ink-3)]">{t.contracts.payments.dueDate}</span>
               {/* Money is received on a date that has happened. A receipt dated
                   next year (or year 0202) would land outside every report it
                   belongs to and never be found again. */}
@@ -337,8 +337,8 @@ export function ContractPayments({
                 min={payBounds.min}
                 max={payBounds.max}
                 onChange={(e) => setNewDate(e.target.value)}
-                className={`h-12 rounded-lg border-2 bg-white px-2.5 text-sm transition-colors focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand)_25%,transparent)] ${
-                  payDateInvalid ? "border-red-400" : "border-slate-200"
+                className={`h-12 rounded-lg border-2 bg-[var(--field-bg)] px-2.5 text-sm text-[var(--ink-1)] transition-colors focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand)_25%,transparent)] ${
+                  payDateInvalid ? "border-[var(--wash-rose-ink)]" : "border-[var(--field-border)]"
                 }`}
               />
             </label>
@@ -347,7 +347,7 @@ export function ContractPayments({
             type="button"
             onClick={handleRecordPayment}
             disabled={recording || !newAmount || payDateInvalid}
-            className="btn-brand relative h-12 w-full rounded-lg text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50 disabled:hover:translate-y-0"
+            className="btn-brand relative h-12 w-full rounded-lg text-base font-bold text-[var(--on-brand)] shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110 active:translate-y-0 active:scale-[0.99] disabled:opacity-50 disabled:hover:translate-y-0"
           >
             {recording ? (
               t.common.loading
@@ -357,18 +357,20 @@ export function ContractPayments({
               </span>
             )}
           </button>
-          {recordError && <p className="relative text-xs font-medium text-red-600">{recordError}</p>}
+          {recordError && (
+            <p className="relative text-xs font-medium text-[var(--wash-rose-ink)]">{recordError}</p>
+          )}
         </div>
       )}
 
       {!readOnly && payments.length === 0 && contract.payment_type === "installment" && (
         <>
-          <p className="text-sm text-slate-400">{t.contracts.payments.generateHint}</p>
+          <p className="text-sm text-[var(--ink-5)]">{t.contracts.payments.generateHint}</p>
           <button
             type="button"
             onClick={handleGenerate}
             disabled={generating || !contract.installment_months}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98] disabled:opacity-50"
+            className="w-full rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-2 text-sm font-medium text-[var(--ink-2)] transition-all hover:border-[var(--ink-5)] hover:bg-[var(--hover-c)] active:scale-[0.98] disabled:opacity-50"
           >
             {t.contracts.payments.generate}
           </button>
@@ -383,17 +385,17 @@ export function ContractPayments({
           directly above its own content instead. */}
       {payments.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="flex h-2 w-full overflow-hidden rounded-full bg-[var(--track-c)]">
             <div
               className="h-full rounded-full bg-emerald-500 transition-[width] duration-500"
               style={{ width: `${paidPct}%` }}
             />
           </div>
           {nextDue && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[var(--ink-4)]">
               {t.contracts.payments.nextDue}:{" "}
-              <span className="font-semibold text-slate-700">{formatShortDate(nextDue.due_date)}</span> ·{" "}
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-[var(--ink-2)]">{formatShortDate(nextDue.due_date)}</span> ·{" "}
+              <span className="font-semibold text-[var(--ink-2)]">
                 {formatCurrency(nextDueRemaining, contract.currency)}
               </span>
             </p>
@@ -412,7 +414,7 @@ export function ContractPayments({
           <button
             type="button"
             onClick={() => setHistoryExpanded((v) => !v)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98]"
+            className="w-full rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-2 text-sm font-medium text-[var(--ink-2)] transition-all hover:bg-[var(--hover-c)] active:scale-[0.98]"
           >
             {historyExpanded
               ? t.clients.paymentHistory.hide
@@ -423,24 +425,24 @@ export function ContractPayments({
               {paidPayments.map((p) => (
                 <div
                   key={p.id}
-                  className="flex flex-col gap-2 rounded-lg border border-emerald-100 bg-emerald-50/40 px-3 py-2.5 transition-colors hover:border-emerald-200"
+                  className="flex flex-col gap-2 rounded-lg border border-[var(--wash-emerald-border)] bg-[var(--wash-emerald)] px-3 py-2.5 transition-colors hover:border-[var(--wash-emerald-ink)]"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-slate-900">
+                      <span className="text-sm font-semibold text-[var(--ink-1)]">
                         {formatCurrency(p.amount, contract.currency)}
                       </span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-[var(--ink-5)]">
                         №{receiptNumberFor(payments, p.id)} · {formatShortDate(p.paid_date ?? p.due_date)}
                       </span>
                     </div>
-                    <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    <span className="shrink-0 rounded-full bg-[var(--wash-emerald)] px-2.5 py-1 text-xs font-medium text-[var(--wash-emerald-ink)]">
                       ✓ {t.clients.paymentHistory.paid}
                     </span>
                   </div>
                   {/* Same rule as everywhere else: every action of this row in
                       one cluster on the right, not split to opposite edges. */}
-                  <div className="flex flex-wrap items-center justify-end gap-2 border-t border-emerald-100/60 pt-1.5">
+                  <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--wash-emerald-border)] pt-1.5">
                     <SendActions
                       contractId={contract.id}
                       kind="receipt"
@@ -456,7 +458,7 @@ export function ContractPayments({
                         onClick={() => handleDeletePayment(p)}
                         disabled={deletingId === p.id}
                         title={t.contracts.payments.deletePayment}
-                        className="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[11px] font-semibold text-red-600 transition-all hover:bg-red-50 active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-1 rounded-lg border border-[var(--wash-rose-border)] px-2 py-1 text-[11px] font-semibold text-[var(--wash-rose-ink)] transition-all hover:bg-[var(--wash-rose)] active:scale-95 disabled:opacity-50"
                       >
                         ✕
                       </button>
@@ -482,7 +484,7 @@ export function ContractPayments({
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98]"
+            className="w-full rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] px-4 py-2 text-sm font-medium text-[var(--ink-2)] transition-all hover:bg-[var(--hover-c)] active:scale-[0.98]"
           >
             {expanded
               ? t.contracts.payments.hideSchedule
@@ -497,29 +499,29 @@ export function ContractPayments({
                     key={p.id}
                     className={`flex flex-col gap-1.5 rounded-lg border px-3 py-2 transition-colors ${
                       a.state === "covered"
-                        ? "border-emerald-100 bg-emerald-50/30"
+                        ? "border-[var(--wash-emerald-border)] bg-[var(--wash-emerald)]"
                         : a.state === "partial"
-                          ? "border-amber-200 bg-amber-50/40"
-                          : "border-slate-100 hover:border-slate-200"
+                          ? "border-[var(--wash-amber-border)] bg-[var(--wash-amber)]"
+                          : "border-[var(--border-c2)] hover:border-[var(--border-c)]"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-slate-700">
+                        <span className="text-sm font-medium text-[var(--ink-2)]">
                           {a.state === "partial"
                             ? `${formatCurrency(a.covered, contract.currency)} / ${formatCurrency(p.amount, contract.currency)}`
                             : formatCurrency(p.amount, contract.currency)}
                         </span>
-                        <span className="text-xs text-slate-400">{formatShortDate(p.due_date)}</span>
+                        <span className="text-xs text-[var(--ink-5)]">{formatShortDate(p.due_date)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         {a.state === "covered" && (
-                          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                          <span className="rounded-full bg-[var(--wash-emerald)] px-2.5 py-1 text-xs font-medium text-[var(--wash-emerald-ink)]">
                             ✓ {t.contracts.payments.covered}
                           </span>
                         )}
                         {a.state === "partial" && (
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                          <span className="rounded-full bg-[var(--wash-amber)] px-2.5 py-1 text-xs font-medium text-[var(--wash-amber-ink)]">
                             {Math.round((a.covered / p.amount) * 100)}%
                           </span>
                         )}
@@ -529,7 +531,7 @@ export function ContractPayments({
                             onClick={() => handleDeletePayment(p)}
                             disabled={deletingId === p.id}
                             title={t.contracts.payments.deletePayment}
-                            className="flex items-center rounded-lg border border-red-200 px-2 py-1 text-[11px] font-semibold text-red-600 transition-all hover:bg-red-50 active:scale-95 disabled:opacity-50"
+                            className="flex items-center rounded-lg border border-[var(--wash-rose-border)] px-2 py-1 text-[11px] font-semibold text-[var(--wash-rose-ink)] transition-all hover:bg-[var(--wash-rose)] active:scale-95 disabled:opacity-50"
                           >
                             ✕
                           </button>
@@ -537,7 +539,7 @@ export function ContractPayments({
                       </div>
                     </div>
                     {a.state === "partial" && (
-                      <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
+                      <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--track-c)]">
                         <div
                           className="h-full rounded-full bg-amber-500 transition-[width] duration-500"
                           style={{ width: `${(a.covered / p.amount) * 100}%` }}
