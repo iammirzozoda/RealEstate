@@ -21,11 +21,16 @@ const PAGE_SIZE = 25;
 // more than this in one response anyway.
 const EXPORT_BATCH = 1000;
 
-type SortKey = "overdue" | "oldest" | "name";
+type SortKey = "freshest" | "overdue" | "oldest" | "name";
 
 // Which column each choice orders by, applied in the database so the order
 // holds across pages.
 const SORTS: Record<SortKey, { column: string; ascending: boolean }> = {
+  // Most recently missed payment first -- who fell behind TODAY, then
+  // yesterday, then a few days ago. These are the calls most worth making
+  // first: still fresh enough that a reminder alone often fixes it, before
+  // it drifts into "oldest" territory further down the list.
+  freshest: { column: "latest_due", ascending: false },
   overdue: { column: "total_overdue", ascending: false },
   oldest: { column: "earliest_due", ascending: true },
   name: { column: "client_name", ascending: true },
@@ -73,6 +78,16 @@ type OverdueRow = {
   latest_due: string;
 };
 
+// A quick "how bad is this one" read at a glance, without having to parse
+// the day count. Amber for a debtor who just fell behind (0-3 days -- a
+// reminder alone often still fixes this) vs rose for one who's been
+// overdue longer (needs a firmer follow-up, not just a nudge).
+function urgencyTone(daysOverdue: number): string {
+  return daysOverdue <= 3
+    ? "bg-[var(--wash-amber)] text-[var(--wash-amber-ink)]"
+    : "bg-[var(--wash-rose)] text-[var(--wash-rose-ink)]";
+}
+
 // Same shape the table renders, built from one RPC row.
 function toDebt(r: OverdueRow, now: number): ContractDebt {
   return {
@@ -102,14 +117,17 @@ export default function DebtorsPage() {
     Array<{ currency: Currency; overdue: number; remaining: number; contracts: number }>
   >([]);
   // Explicit, and visible on screen. The order used to be fixed and unstated,
-  // so there was no way to tell what the list was sorted by.
-  const [sort, setSort] = useState<SortKey>("overdue");
+  // so there was no way to tell what the list was sorted by. Defaults to
+  // "freshest" (who just fell behind) rather than "by amount owed" -- the
+  // list is a call queue, and the most recently missed payment is the one
+  // worth acting on first.
+  const [sort, setSort] = useState<SortKey>("freshest");
   // Filter by ЖК: collections are organised per development, so "show me only
   // this one" is the first thing anybody asks of this list.
   const [buildingId, setBuildingId] = useState<string>("all");
   const [buildings, setBuildings] = useState<Array<{ id: string; name: string }>>([]);
   const [byBuilding, setByBuilding] = useState<
-    Array<{ name: string; overdue: number; contracts: number; currency: Currency }>
+    Array<{ name: string; overdue: number; remaining: number; contracts: number; currency: Currency }>
   >([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -236,12 +254,14 @@ export default function DebtorsPage() {
             currency: Currency;
             contracts: number;
             total_overdue: number;
+            remaining_total: number | null;
           }>
         ).map((r) => ({
           name: r.building_name,
           currency: r.currency,
           contracts: r.contracts,
           overdue: Number(r.total_overdue),
+          remaining: Number(r.remaining_total ?? 0),
         }))
       );
     });
@@ -367,6 +387,10 @@ export default function DebtorsPage() {
                 data={cRows.map((b) => ({
                   label: b.name,
                   value: b.overdue,
+                  // Track sized to the whole remaining balance, overdue
+                  // filled in as a share of it -- see chartHint below,
+                  // which this now actually matches.
+                  total: b.remaining > 0 ? b.remaining : b.overdue,
                   hue: STATUS_HUES.sold,
                   hint: `${b.contracts} ${t.contracts.title.toLowerCase()}`,
                 }))}
@@ -407,6 +431,7 @@ export default function DebtorsPage() {
             </span>
             {(
               [
+                ["freshest", t.debtors.sortByFreshest],
                 ["overdue", t.debtors.sortByOverdue],
                 ["oldest", t.debtors.sortByOldest],
                 ["name", t.debtors.sortByName],
@@ -472,10 +497,14 @@ export default function DebtorsPage() {
                 </td>
                 <td className="px-4 py-3 text-[var(--ink-3)]">{r.objectName ?? "—"}</td>
                 <td className="px-4 py-3 text-[var(--ink-3)]">
-                  {formatShortDate(r.earliestDue)}
-                  <span className="block text-xs text-[var(--ink-5)]">
-                    {r.daysOverdue} {t.debtors.days}
-                  </span>
+                  <div className="flex flex-col items-start gap-1">
+                    {formatShortDate(r.earliestDue)}
+                    <span
+                      className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium ${urgencyTone(r.daysOverdue)}`}
+                    >
+                      {r.daysOverdue} {t.debtors.days}
+                    </span>
+                  </div>
                 </td>
                 {/* Amount first, then how many payments make it up, spelled
                     out. "9 плат." said nothing about what was owed. */}
@@ -562,8 +591,13 @@ export default function DebtorsPage() {
 
             <div className="flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs text-[var(--ink-5)]">
-                  {formatShortDate(r.earliestDue)} · {r.daysOverdue} {t.debtors.days}
+                <p className="flex items-center gap-1.5 text-xs text-[var(--ink-5)]">
+                  {formatShortDate(r.earliestDue)}
+                  <span
+                    className={`inline-flex items-center rounded-full px-1.5 py-0.5 font-medium ${urgencyTone(r.daysOverdue)}`}
+                  >
+                    {r.daysOverdue} {t.debtors.days}
+                  </span>
                 </p>
                 <p className="font-semibold text-[var(--wash-rose-ink)]">
                   {formatCurrency(r.totalOverdue, r.currency)}
