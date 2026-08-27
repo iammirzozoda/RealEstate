@@ -166,7 +166,11 @@ export default function RentalsPage() {
 
       {!configured && <SetupNotice />}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* Filters and the add action in one right-aligned cluster -- the same
+          place every list page keeps its controls now, instead of filters
+          pinned left and the button pinned right with a gap of empty row
+          between them. */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <ControlGroup>
           {RENTAL_STATUS_FILTERS.map((s) => (
             <PillButton
@@ -178,9 +182,7 @@ export default function RentalsPage() {
           ))}
         </ControlGroup>
         {canEdit && !adding && (
-          <AddButton size="sm" onClick={() => setAdding(true)}>
-            {t.buildings.rental.add}
-          </AddButton>
+          <AddButton onClick={() => setAdding(true)}>{t.buildings.rental.add}</AddButton>
         )}
       </div>
 

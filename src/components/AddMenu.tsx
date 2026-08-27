@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ControlGroup, IconAction } from "@/components/ActionBar";
-import { PlusIcon } from "@/components/icons";
+import { AddButton } from "@/components/AddButton";
 
 export function AddMenu({
   label,
@@ -26,18 +25,11 @@ export function AddMenu({
   }, []);
 
   return (
-    // Same bordered group and same themed plus icon as the "add" action on
-    // every other list page, so the header reads identically everywhere.
+    // Same AddButton as the "add" action on every other list page, so the
+    // header reads identically everywhere -- this one just opens a menu of
+    // two destinations instead of navigating straight there.
     <div ref={containerRef} className="relative">
-      <ControlGroup>
-        <IconAction
-          label={label}
-          icon={<PlusIcon />}
-          tone="brand"
-          active={open}
-          onClick={() => setOpen((v) => !v)}
-        />
-      </ControlGroup>
+      <AddButton onClick={() => setOpen((v) => !v)}>{label}</AddButton>
       {open && (
         <div className="animate-modal-panel absolute right-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] py-1 shadow-lg">
           {items.map((item) => (

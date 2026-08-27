@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { SetupNotice } from "@/components/SetupNotice";
-import { ControlGroup, IconAction, PillButton } from "@/components/ActionBar";
-import { PlusIcon } from "@/components/icons";
+import { ControlGroup, PillButton } from "@/components/ActionBar";
+import { AddButton } from "@/components/AddButton";
 import { Pagination } from "@/components/Pagination";
 import { TASK_STATUS_COLORS } from "@/lib/tasks/format";
 import { TASK_STATUSES, type Task, type TaskStatusValue } from "@/lib/tasks/types";
@@ -64,24 +64,16 @@ export default function TasksPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t.tasks.title}</h1>
-        <ControlGroup>
-          <IconAction
-            label={t.tasks.newTask}
-            icon={<PlusIcon />}
-            tone="brand"
-            href="/tasks/new"
-          />
-        </ControlGroup>
-      </div>
+      <h1 className="text-2xl font-semibold">{t.tasks.title}</h1>
 
       {!configured && <SetupNotice />}
 
       {/* One option per status rather than a dropdown: there are only four,
           and as pills the current filter is visible without opening anything.
-          Glued into one control, list-page size. */}
-      <div className="flex flex-wrap gap-3">
+          The add action lives in the same right-aligned cluster now, not a
+          separate control up in the title row with a gap of empty header
+          between it and everything else that touches this list. */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <ControlGroup>
           <PillButton
             label={t.tasks.filters.allStatuses}
@@ -97,6 +89,7 @@ export default function TasksPage() {
             />
           ))}
         </ControlGroup>
+        <AddButton href="/tasks/new">{t.tasks.newTask}</AddButton>
       </div>
 
       <div className="animate-fade-up hidden overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] sm:block">

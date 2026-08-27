@@ -152,30 +152,27 @@ export default function ObjectsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t.objects.title}</h1>
-        {role === "admin" && (
-          <AddMenu
-            label={t.objects.add}
-            items={[
-              { href: "/objects/new", label: t.objects.newObject },
-              { href: "/buildings/new", label: t.objects.newBuilding },
-            ]}
-          />
-        )}
-      </div>
+      <h1 className="text-2xl font-semibold">{t.objects.title}</h1>
 
       {!configured && <SetupNotice />}
 
-      <div className="flex flex-wrap gap-3">
+      {/* Search, filters and the add action in one right-aligned row --
+          the add menu used to sit alone up in the title row, its own
+          gap of empty header away from the controls that actually filter
+          this same list. Search keeps flex-1 so it's the one thing that
+          grows; everything else sits at its natural width beside it. */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <input
           value={searchInput}
           onChange={(e) => onFilterChange(setSearchInput)(e.target.value)}
           placeholder={t.objects.search}
           className="h-10 min-w-[220px] flex-1 rounded-lg border border-[var(--field-border)] bg-[var(--field-bg)] px-3 text-sm text-[var(--ink-1)] transition-colors focus:border-[var(--field-focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--field-focus-ring)]"
         />
-        {/* The two filters were separate bordered selects sitting side by
-            side; glued into one control with a hairline between them. */}
+        {/* Two selects, not pills: 6 types + 5 statuses would be eleven
+            pills wide, wrapping across lines where rentals/tasks fit
+            their four in one -- a dropdown is still the same bordered
+            ControlGroup box as every pill row, just the right widget for
+            this many options. */}
         <ControlGroup>
           <select
             value={typeFilter}
@@ -203,6 +200,15 @@ export default function ObjectsPage() {
             ))}
           </select>
         </ControlGroup>
+        {role === "admin" && (
+          <AddMenu
+            label={t.objects.add}
+            items={[
+              { href: "/objects/new", label: t.objects.newObject },
+              { href: "/buildings/new", label: t.objects.newBuilding },
+            ]}
+          />
+        )}
       </div>
 
       <div className="animate-fade-up hidden overflow-x-auto rounded-lg border border-[var(--border-c)] bg-[var(--surface-1)] sm:block">
