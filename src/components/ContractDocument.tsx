@@ -334,35 +334,50 @@ export function ContractDocument({
     return rows;
   })();
 
+  // A4 content height per printed page: 297mm page minus the 12mm top and
+  // 12mm bottom margins (the @page rule in globals.css -- this number has
+  // to match it by hand, there's no way to read a CSS rule back in here).
+  const PAGE_CONTENT_MM = 297 - 12 - 12;
+
   // Watermark: the company logo, washed out and centred behind the text,
-  // same as the Word original. Deliberately an <img> rather than a CSS
-  // background -- browsers skip background graphics when printing unless
-  // the user ticks that box, but real images always print.
+  // same as the Word original. Deliberately <img> elements rather than a
+  // CSS background -- browsers skip background graphics when printing
+  // unless the user ticks that box, but real images always print.
   //
-  // Rendered once per PAGE-SIZED block (main body, ЗАМИМА, payment
-  // schedule) below rather than once for the whole document, each
-  // centred on that block's own height -- not because it looks nicer, but
-  // because a single instance centred on the combined height of all three
-  // blocks together only ever lands correctly on whichever one physical
-  // page happens to fall at that combined midpoint, leaving it missing or
-  // off-centre everywhere else. position:fixed would repeat it per page
-  // instead, but #contract-print-area's own print rules (globals.css)
-  // already tried and dropped that: Chrome doesn't paginate a fixed
-  // element, it just clips the same single viewport-height slice onto
-  // every page, which cuts the document off outright. Per-block absolute
-  // positioning is the part of that trade this component can still make:
-  // ЗАМИМА and the schedule table each force their own fresh page and are
-  // sized to fit one, so a watermark centred on either lands correctly;
-  // the main body is the one block that can still run to a second page on
-  // its own, same as before.
-  const watermark = settings.company_logo_url && (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={settings.company_logo_url}
-      alt=""
-      aria-hidden="true"
-      className="pointer-events-none absolute left-1/2 top-1/2 w-[62%] -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.12]"
-    />
+  // REPEATED, one copy per page height, rather than a single instance
+  // centred on the whole document -- a contract can run several physical
+  // pages (the main body, then ЗАМИМА and the payment schedule each
+  // forcing a fresh page of their own), and a single top:50% image only
+  // ever lands on whichever ONE page happens to fall at the combined
+  // midpoint, leaving every other page missing it or showing it cut off
+  // partway down. position:fixed would repeat a background per printed
+  // page instead, but #contract-print-area's own print rules
+  // (globals.css) already tried that and dropped it: Chrome doesn't
+  // paginate a fixed element at all, it just clips the same
+  // single-viewport-height slice onto every page. Tiling absolute copies
+  // at fixed PAGE_CONTENT_MM intervals is what's left -- each one centred
+  // within its own page-height slice, counted from the top of THIS
+  // document (which always starts a fresh page: see the
+  // print:break-before-page/print:break-after-page around every copy and
+  // annex, so offset 0 here really is the top of a printed page). Eight
+  // repeats is more pages than any realistic contract runs to; the unused
+  // ones fall past the actual content and are clipped by this card's own
+  // overflow-hidden, same as if they were never rendered.
+  const logoUrl = settings.company_logo_url;
+  const watermark = logoUrl && (
+    <>
+      {Array.from({ length: 8 }, (_, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={i}
+          src={logoUrl}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 w-[62%] -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.12]"
+          style={{ top: `${i * PAGE_CONTENT_MM + PAGE_CONTENT_MM / 2}mm` }}
+        />
+      ))}
+    </>
   );
 
   return (
@@ -370,8 +385,7 @@ export function ContractDocument({
       style={SERIF}
       className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-[11px] leading-[1.4] text-slate-900 shadow-sm print:rounded-none print:border-0 print:shadow-none"
     >
-      <div className="relative">
-        {watermark}
+      {watermark}
       <div className="relative">
         {copyLabel && (
           <p className="px-6 py-1 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
@@ -850,8 +864,6 @@ export function ContractDocument({
             </div>
           </div>
         </div>
-      </div>
-      </div>
 
         {/* ЗАМИМА is the list of CONSTRUCTION works completed on a new
             building being sold -- meaningless for a lease of already-
@@ -871,8 +883,6 @@ export function ContractDocument({
             (14-item list + two signature blocks), and a flex container
             doesn't paginate that overflow onto the next page cleanly. */}
         {!isRent && (
-        <div className="relative">
-          {watermark}
         <div className="flex flex-col gap-1.5 px-10 pb-8 pt-7 print:break-before-page print:block">
           <div className="flex items-center gap-3">
             <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
@@ -976,7 +986,6 @@ export function ContractDocument({
             </div>
           </div>
         </div>
-        </div>
         )}
 
         {/* Payment schedule -- only when the deal actually has one, and the
@@ -992,8 +1001,6 @@ export function ContractDocument({
             what lets it spill onto a FOLLOWING page cleanly if it runs
             past one on its own. */}
         {(contract.payment_type === "installment" || isRent) && payments.length > 0 && (
-        <div className="relative">
-          {watermark}
           <div className="flex flex-col gap-1.5 px-10 pb-8 pt-7 print:break-before-page print:block">
             <div className="flex items-center gap-3">
               <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
@@ -1066,8 +1073,8 @@ export function ContractDocument({
               </table>
             </div>
           </div>
-        </div>
         )}
+      </div>
     </div>
   );
 }
