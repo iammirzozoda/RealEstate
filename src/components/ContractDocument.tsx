@@ -976,7 +976,14 @@ export function ContractDocument({
               </p>
               <span style={{ backgroundColor: PLUM }} className="h-px flex-1 opacity-25" />
             </div>
-            <p className="text-justify">
+            {/* Same narrower centred column and black/white marking as the
+                ЗАМИМА table above: bold black rule under the header instead
+                of plum, tabular numbers so № and Маблағ line up in their
+                columns, neutral grey zebra, a bold (not coloured) date for
+                a still-open row that's already past its due date, and a
+                heavier top rule on the total row instead of the previous
+                double-thin one. */}
+            <p className="mx-auto w-[91%] text-center">
               Пардохтшуда: <b>{docAmount(paidSoFar, contract.currency)}</b>; боқимонда:{" "}
               <b>{docAmount(remainingSchedule, contract.currency)}</b>
               {unpaidRows.length > 0 && typicalMonthly != null && (
@@ -988,36 +995,47 @@ export function ContractDocument({
               )}
               .
             </p>
-            <table className="mt-1 w-full border-collapse text-[12px]">
-              <thead>
-                <tr className="border-b border-slate-400 text-left">
-                  <th className="px-2 py-1 font-semibold">№</th>
-                  <th className="px-2 py-1 font-semibold">Сана</th>
-                  <th className="px-2 py-1 text-right font-semibold">Маблағ</th>
-                  <th className="px-2 py-1 text-center font-semibold">Пардохт шуд</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map((p, i) => (
-                  <tr key={p.id} className="border-b border-slate-200">
-                    <td className="px-2 py-1">{i + 1}</td>
-                    <td className="px-2 py-1">{shortDate(p.due_date)}</td>
-                    <td className="px-2 py-1 text-right">
-                      {docAmount(p.amount, contract.currency)}
-                    </td>
-                    <td className="px-2 py-1 text-center">{p.paid ? "✓" : "—"}</td>
+            <div className="mx-auto mt-1 w-[82%]">
+              <table className="w-full border-collapse text-[12px]">
+                <thead>
+                  <tr className="border-b-[1.6px] border-slate-900 text-left">
+                    <th className="px-2 py-1 text-center font-bold">№</th>
+                    <th className="px-2 py-1 font-bold">Сана</th>
+                    <th className="px-2 py-1 text-right font-bold">Маблағ</th>
+                    <th className="whitespace-nowrap px-2 py-1 text-center font-bold">
+                      Пардохт шуд
+                    </th>
                   </tr>
-                ))}
-                <tr className="border-t-2 border-slate-900 font-bold">
-                  <td className="px-2 py-1" />
-                  <td className="px-2 py-1">Ҷамъ</td>
-                  <td className="px-2 py-1 text-right">
-                    {docAmount(scheduleTotal, contract.currency)}
-                  </td>
-                  <td className="px-2 py-1" />
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {payments.map((p, i) => {
+                    const overdue = !p.paid && new Date(p.due_date) < new Date();
+                    return (
+                      <tr key={p.id} className="border-b-[0.6px] border-slate-300 even:bg-slate-50">
+                        <td className="px-2 py-1 text-center tabular-nums">{i + 1}</td>
+                        <td className={`px-2 py-1 ${overdue ? "font-bold" : ""}`}>
+                          {shortDate(p.due_date)}
+                        </td>
+                        <td className="px-2 py-1 text-right tabular-nums">
+                          {docAmount(p.amount, contract.currency)}
+                        </td>
+                        <td className="px-2 py-1 text-center">
+                          {p.paid ? <span className="font-bold">✓</span> : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="border-t-[1.8px] border-slate-900 font-bold">
+                    <td className="px-2 py-1" />
+                    <td className="px-2 py-1">Ҷамъ</td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      {docAmount(scheduleTotal, contract.currency)}
+                    </td>
+                    <td className="px-2 py-1" />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
