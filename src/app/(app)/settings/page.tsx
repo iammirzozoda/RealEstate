@@ -9,6 +9,7 @@ import { SetupNotice } from "@/components/SetupNotice";
 import { FileUploadField } from "@/components/FileUploadField";
 import { Accordion } from "@/components/Accordion";
 import { SmsScheduler } from "@/components/SmsScheduler";
+import { CustomSmsModal } from "@/components/CustomSmsModal";
 import { Toast, type ToastType } from "@/components/Toast";
 import { HERO_THEMES, HERO_PATTERNS } from "@/components/HeroThemeSwitcher";
 import { useSettings } from "@/lib/settings/SettingsProvider";
@@ -131,6 +132,7 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [testPhone, setTestPhone] = useState("");
   const [testSending, setTestSending] = useState(false);
+  const [showBroadcast, setShowBroadcast] = useState(false);
   // Buildings for the "documentation PDF" picker.
   const [buildings, setBuildings] = useState<Array<{ id: string; name: string }>>([]);
   const [reportBuilding, setReportBuilding] = useState("");
@@ -469,6 +471,31 @@ export default function SettingsPage() {
             />
           </div>
 
+          {/* One compact row, not a fourth full TemplateField -- the whole
+              point is that this is free text, chosen fresh each time, not
+              something worth a permanent textarea taking up room in a
+              section people mostly leave collapsed. Everything else
+              (audience, recipients, the text itself) lives in the modal it
+              opens, so the section here never grows past this one line. */}
+          <div className="flex items-center gap-3 border-t border-[var(--border-c2)] pt-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--wash-sky)] text-[var(--wash-sky-ink)]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                <path d="M4 5.5h16M4 12h16M4 18.5h9" strokeLinecap="round" />
+              </svg>
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-[var(--ink-2)]">{t.settings.sms.broadcastRow}</p>
+              <p className="truncate text-xs text-[var(--ink-5)]">{t.settings.sms.broadcastRowHint}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowBroadcast(true)}
+              className="h-9 shrink-0 rounded-lg border border-[var(--border-strong-c)] px-3.5 text-sm font-medium text-[var(--ink-2)] transition-all hover:bg-[var(--hover-c)] active:scale-[0.98]"
+            >
+              {t.settings.sms.broadcastOpen}
+            </button>
+          </div>
+
           {/* Compact inline test-send: one row, phone + button, no separate
               card -- saves the form first so the API key/sender it tests is
               exactly what's on screen, then fires one real SMS through the
@@ -621,6 +648,13 @@ export default function SettingsPage() {
         type={toast?.type ?? "success"}
         onDismiss={() => setToast(null)}
       />
+
+      {showBroadcast && (
+        <CustomSmsModal
+          onClose={() => setShowBroadcast(false)}
+          onResult={(message, ok) => setToast({ message, type: ok ? "success" : "error" })}
+        />
+      )}
     </div>
   );
 }

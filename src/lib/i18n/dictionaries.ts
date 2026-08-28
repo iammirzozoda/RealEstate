@@ -785,6 +785,25 @@ export const dictionaries = {
           "На сервере не задана переменная CRON_SECRET (Vercel → Project Settings → Environment Variables). Без неё ночной запуск отклоняется, и SMS не уходят.",
         blockerProjectMismatch:
           "SUPABASE_SERVICE_ROLE_KEY на сервере принадлежит другому проекту Supabase. Возьмите service_role из того же проекта (Project Settings → API) и сделайте Redeploy.",
+        broadcastRow: "Своя рассылка",
+        broadcastRowHint: "по зданию, должникам или всем клиентам",
+        broadcastOpen: "Открыть",
+        broadcast: {
+          title: "Своя рассылка",
+          audienceLabel: "Кому",
+          audienceAll: "Все клиенты",
+          audienceBuilding: "По зданию",
+          audienceDebtors: "Должники",
+          recipients: "Получателей",
+          showList: "Показать список ({n})",
+          noPhone: "нет номера",
+          textLabel: "Текст сообщения",
+          textPlaceholder: "Например: {{client_name}}, дом сдан — приходите за ключами в офис.",
+          send: "Отправить {n}",
+          sending: "Отправка…",
+          sent: "Рассылка отправлена",
+          confirm: "Отправить SMS {n} получателям?",
+        },
       },
       save: "Сохранить настройки",
       saved: "Настройки сохранены",
@@ -859,6 +878,10 @@ export const dictionaries = {
       // about exactly the cases someone would want to know about.
       actionSmsSkipped: "Не отправлено",
       actionSmsFailed: "Ошибка отправки",
+      // The one action logged from the custom "Своя рассылка" (see
+      // /api/sms/broadcast) -- one row per whole campaign, not per
+      // recipient, with the counts as ordinary detail fields below.
+      actionSmsBroadcast: "Рассылка",
       reasonNoPhone: "нет номера телефона",
       reasonGatewayError: "шлюз отклонил",
       entityTypes: {
@@ -867,6 +890,7 @@ export const dictionaries = {
         contract_payment: "Платёж",
         object: "Квартира",
         task: "Задача",
+        sms_broadcast: "SMS-рассылка",
       },
       unknownActor: "Неизвестно",
       yes: "Да",
@@ -910,6 +934,15 @@ export const dictionaries = {
         description: "Описание",
         title: "Название",
         assignee: "Исполнитель",
+        // The "Своя рассылка" summary row's own fields -- audience/message/
+        // counts, not a DB column, but fieldLines() (audit-log/page.tsx)
+        // renders any details key with a label here the same way.
+        audience: "Кому",
+        message: "Текст",
+        recipients: "Получателей",
+        sent: "Отправлено",
+        failed: "Не доставлено",
+        skipped: "Пропущено (нет номера)",
       },
     },
     password: {
@@ -1746,6 +1779,25 @@ export const dictionaries = {
           "Дар сервер тағйирёбандаи CRON_SECRET муқаррар нашудааст (Vercel → Project Settings → Environment Variables). Бе он иҷрои шабона рад мешавад ва SMS намеравад.",
         blockerProjectMismatch:
           "SUPABASE_SERVICE_ROLE_KEY дар сервер ба лоиҳаи дигари Supabase тааллуқ дорад. service_role-ро аз ҳамон лоиҳа гиред (Project Settings → API) ва Redeploy кунед.",
+        broadcastRow: "Фиристодани матни худ",
+        broadcastRowHint: "аз рӯи бино, қарздорон ё ҳамаи мизоҷон",
+        broadcastOpen: "Кушодан",
+        broadcast: {
+          title: "Фиристодани матни худ",
+          audienceLabel: "Ба кӣ",
+          audienceAll: "Ҳамаи мизоҷон",
+          audienceBuilding: "Аз рӯи бино",
+          audienceDebtors: "Қарздорон",
+          recipients: "Гирандагон",
+          showList: "Рӯйхатро нишон додан ({n})",
+          noPhone: "рақам нест",
+          textLabel: "Матни паём",
+          textPlaceholder: "Масалан: {{client_name}}, бино супорида шуд — барои калид ба офис биёед.",
+          send: "Фиристодан ба {n}",
+          sending: "Фиристода истодааст…",
+          sent: "Фиристодан анҷом ёфт",
+          confirm: "SMS ба {n} гиранда фиристода шавад?",
+        },
       },
       save: "Танзимотро захира кардан",
       saved: "Танзимот захира шуд",
@@ -1813,6 +1865,7 @@ export const dictionaries = {
       actionDelete: "Нест кардан",
       actionSmsSkipped: "Фиристода нашуд",
       actionSmsFailed: "Хатои фиристодан",
+      actionSmsBroadcast: "Фиристодан",
       reasonNoPhone: "рақами телефон нест",
       reasonGatewayError: "шлюз рад кард",
       entityTypes: {
@@ -1821,6 +1874,7 @@ export const dictionaries = {
         contract_payment: "Пардохт",
         object: "Хона",
         task: "Супориш",
+        sms_broadcast: "Фиристодани SMS",
       },
       unknownActor: "Номаълум",
       yes: "Ҳа",
@@ -1859,6 +1913,12 @@ export const dictionaries = {
         description: "Тавсиф",
         title: "Ном",
         assignee: "Иҷрокунанда",
+        audience: "Ба кӣ",
+        message: "Матн",
+        recipients: "Гирандагон",
+        sent: "Фиристода шуд",
+        failed: "Нарасид",
+        skipped: "Гузашта шуд (рақам нест)",
       },
     },
     password: {

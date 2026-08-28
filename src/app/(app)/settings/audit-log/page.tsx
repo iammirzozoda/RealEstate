@@ -149,6 +149,7 @@ const ACTION_STYLES: Record<string, string> = {
   delete: "bg-[var(--wash-rose)] text-[var(--wash-rose-ink)]",
   sms_skipped: "bg-[var(--wash-amber)] text-[var(--wash-amber-ink)]",
   sms_failed: "bg-[var(--wash-rose)] text-[var(--wash-rose-ink)]",
+  sms_broadcast: "bg-[var(--wash-sky)] text-[var(--wash-sky-ink)]",
 };
 
 // Was a create/update/else ternary -- "else" silently meant "delete",
@@ -167,6 +168,8 @@ function actionLabel(action: string, t: Dictionary): string {
       return t.auditLog.actionSmsSkipped;
     case "sms_failed":
       return t.auditLog.actionSmsFailed;
+    case "sms_broadcast":
+      return t.auditLog.actionSmsBroadcast;
     default:
       return t.auditLog.actionDelete;
   }

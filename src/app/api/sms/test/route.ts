@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminErrorMessage, checkAdmin, getServiceClient } from "@/lib/supabase/serviceClient";
 import { smsGatewayPhone } from "@/lib/phone";
+import { sendSms } from "@/lib/sms/gateway";
 
 export const dynamic = "force-dynamic";
 
@@ -34,36 +35,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Укажите номер телефона." }, { status: 400 });
   }
 
-  try {
-    const res = await fetch("https://gateway.payom.tj/api/message", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${settings.sms_api_key}`,
-      },
-      body: JSON.stringify({
-        telephone: phone,
-        // Goes to a real phone, so it names the company that is sending it --
-        // "ZAKI CRM" was a leftover product name that means nothing to whoever
-        // receives the message.
-        text: `Тест: настройки SMS работают. ${settings.company_name ?? settings.sms_sender_name}`,
-        senderName: settings.sms_sender_name,
-        type: "SMS",
-      }),
-    });
-    if (res.ok || [200, 201, 202].includes(res.status)) {
-      return NextResponse.json({ ok: true });
-    }
-    const body = await res.text().catch(() => "");
-    return NextResponse.json(
-      { error: `Шлюз ответил ошибкой (${res.status})${body ? `: ${body.slice(0, 200)}` : ""}` },
-      { status: 502 }
-    );
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Сеть недоступна" },
-      { status: 502 }
-    );
-  }
+  // Goes to a real phone, so it names the company that is sending it --
+  // "ZAKI CRM" was a leftover product name that means nothing to whoever
+  // receives the message.
+  const text = `Тест: настройки SMS работают. ${settings.company_name ?? settings.sms_sender_name}`;
+  const sent = await sendSms(settings.sms_api_key, settings.sms_sender_name, phone, text);
+  if (sent.ok) return NextResponse.json({ ok: true });
+  return NextResponse.json(
+    { error: `Шлюз ответил ошибкой${sent.detail ? `: ${sent.detail}` : ""}` },
+    { status: 502 }
+  );
 }

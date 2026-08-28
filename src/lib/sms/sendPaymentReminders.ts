@@ -1,6 +1,7 @@
 import type { ServiceClient } from "@/lib/supabase/serviceClient";
 import { renderContractTemplate } from "@/lib/contracts/renderTemplate";
 import { smsGatewayPhone } from "@/lib/phone";
+import { sendSms } from "@/lib/sms/gateway";
 
 // The reminder run, in one place, so the nightly cron and the "Отправить
 // сейчас" button in Settings do exactly the same thing -- an admin can prove
@@ -17,8 +18,6 @@ const DEFAULT_PAYMENT_TEMPLATE =
 // instead of a repeated date the client can already see on their phone.
 const DEFAULT_DUE_TODAY_TEMPLATE =
   "{{client_name}}, напоминаем: сегодня срок оплаты {{amount}} {{currency}} по договору №{{contract_number}}.";
-
-const GATEWAY_URL = "https://gateway.payom.tj/api/message";
 
 type DuePayment = {
   id: string;
@@ -50,34 +49,6 @@ function plusDays(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
-}
-
-// Returns why it failed, not just that it did. The run used to report
-// "не доставлено: 3" and throw the gateway's answer away, which left nobody
-// any way to tell a wrong API key from a blocked sender name from a bad
-// number.
-async function sendOne(
-  apiKey: string,
-  senderName: string,
-  phone: string,
-  text: string
-): Promise<{ ok: boolean; detail?: string }> {
-  try {
-    const res = await fetch(GATEWAY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ telephone: phone, text, senderName, type: "SMS" }),
-    });
-    if (res.ok || [200, 201, 202].includes(res.status)) return { ok: true };
-    const body = await res.text().catch(() => "");
-    return { ok: false, detail: `${res.status}${body ? `: ${body.slice(0, 160)}` : ""}` };
-  } catch (err) {
-    return { ok: false, detail: err instanceof Error ? err.message : "сеть недоступна" };
-  }
 }
 
 /**
@@ -212,7 +183,7 @@ export async function sendPaymentReminders(
         due_date: payment.due_date,
       });
 
-      const sent = await sendOne(apiKey, senderName, phone, text);
+      const sent = await sendSms(apiKey, senderName, phone, text);
       if (!sent.ok) {
         failed++;
         if (!firstError && sent.detail) firstError = sent.detail;
