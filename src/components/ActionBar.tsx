@@ -50,6 +50,19 @@ export const SIZE_CLASSES: Record<ToolbarSize, { button: string; icon: string }>
 // tooltip poking out below it -- so this is only for groups built entirely
 // from PillButton/plain content, never one holding an IconAction.
 //
+// min-w-0 alongside max-w-full/overflow-x-auto is not decorative -- without
+// it this does nothing. ControlGroup is always used as a flex item (inside
+// a `flex flex-wrap` action row), and a flex item's default min-width is
+// `auto`, meaning "never shrink below your own content's width" -- NOT 0.
+// max-width:100% only caps growth; it can't force something narrower than
+// that floor. With the floor left at `auto`, the group just stayed exactly
+// as wide as its pills needed, pushed everything else on the row wider than
+// the phone, and the overflow got silently clipped by <main>'s own
+// overflow-x-hidden three levels up -- overflow-x-auto never even
+// triggered, because the group itself never actually became narrower than
+// its content. min-w-0 removes that floor so max-width and overflow-x can
+// do what they say.
+//
 // `wrap` is the version for groups that DO hold an IconAction (a tooltip
 // that must stay visible rules out `scrollable`): plain `flex-wrap`, no
 // overflow property touched at all, so a long toolbar (search + date range
@@ -72,7 +85,11 @@ export function ControlGroup({
     <SizeContext.Provider value={size}>
       <div
         className={`inline-flex items-center rounded-lg border border-[var(--border-strong-c)] bg-[var(--surface-1)] ${
-          scrollable ? "max-w-full overflow-x-auto" : wrap ? "max-w-full flex-wrap" : "w-fit"
+          scrollable
+            ? "min-w-0 max-w-full overflow-x-auto"
+            : wrap
+              ? "min-w-0 max-w-full flex-wrap"
+              : "w-fit"
         } ${size === "sm" ? "gap-0.5 p-0.5" : "gap-1 p-1"} ${className}`}
       >
         {children}

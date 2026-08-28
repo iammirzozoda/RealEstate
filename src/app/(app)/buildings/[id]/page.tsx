@@ -481,8 +481,14 @@ export default function BuildingDetailPage() {
                 has actually been uploaded. */}
             {/* Filters and actions share one right-hand cluster, both at the
                 small size so they line up as a single band instead of a tall
-                icon row above a separate strip of chips. */}
-            <div className="flex flex-wrap items-center justify-end gap-2">
+                icon row above a separate strip of chips. min-w-0: this is
+                itself a flex item (of the title/toolbar row above), and a
+                flex item's default min-width is its content's width, not 0
+                -- without this, the browser would still treat "everything
+                ShakhmatkaFilters needs unwrapped" as this row's own floor,
+                even though ShakhmatkaFilters' own ControlGroup is already
+                free to shrink and scroll. */}
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             {saleUnits.length > 0 && (
               <ShakhmatkaFilters
                 units={saleUnits}
