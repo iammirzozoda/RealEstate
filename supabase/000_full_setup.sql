@@ -5446,3 +5446,628 @@ alter table crm.settings
 update crm.settings
 set sms_due_today_template = $tpl$Уважаемый(ая) {{client_name}}, напоминаем: сегодня срок оплаты {{amount}} {{currency}} по договору №{{contract_number}}.$tpl$
 where sms_due_today_template is null;
+
+-- ### 059_rental_units.sql
+
+-- ============================================================
+-- 059: новый вид сделки -- аренда.
+--
+-- Только это одно значение enum, ничего больше. ALTER TYPE ... ADD VALUE
+-- нельзя использовать в той же транзакции, где новое значение потом
+-- где-то СРАВНИВАЕТСЯ (в функции, ограничении и т.п.) -- Postgres прямо
+-- запрещает "unsafe use of new value of enum type" в пределах одной
+-- транзакции. Поэтому вся остальная работа (recompute_object_status,
+-- новая колонка listing_type и т.д.) -- в 060 ниже, ПОСЛЕ явного commit --
+-- не потому что это менее связанные изменения, а потому что весь этот
+-- файл выполняется одним запросом (одной неявной транзакцией), и без
+-- этого commit новое значение 'rent' было бы недоступно тем же функциям
+-- чуть ниже, на первом же прогоне на базе, где его ещё нет.
+--
+-- Дальше по смыслу: сумма договора аренды -- это не цена объекта, а
+-- арендная плата за весь срок (ставка × месяцев), а installment_months
+-- значит срок аренды. Механика графика платежей та же, что у рассрочки
+-- (см. 060) -- отдельного движка для повторяющихся платежей не нужно.
+--
+-- Идемпотентно, повторный запуск безопасен.
+-- ============================================================
+
+alter type crm.payment_type add value if not exists 'rent';
+
+-- Обязательный явный commit -- см. пояснение выше. Безвреден и на
+-- повторном прогоне, когда 'rent' уже существует и ничего нового не
+-- добавлялось: просто фиксирует то, что уже сделано, и открывает
+-- следующую неявную транзакцию для 060.
+commit;
+
+-- ### 060_rental_units_status.sql
+
+-- ============================================================
+-- 060: аренда -- остальное. Follows 059 (payment_type gained 'rent' there,
+-- committed separately above -- see that block for why it had to be).
+--
+-- 1. crm.objects.listing_type ('sale' | 'rent', default 'sale' -- every
+--    existing row keeps behaving exactly as before). This is what tells
+--    a warehouse meant for rent apart from an apartment meant for sale
+--    BEFORE either one has a contract at all -- the shakhmatka excludes
+--    listing_type = 'rent' objects, the new "Аренда" section on the
+--    building page shows only those.
+--
+-- 2. crm.recompute_object_status() now sets 'rented' (already a valid
+--    status, already coloured/translated in the app -- see 049's own
+--    comment noting nothing ever set it) instead of 'sold' when the
+--    paying contract on the object is payment_type = 'rent'. Every other
+--    branch (reserved, available) is untouched.
+--
+-- 3. crm.regenerate_schedule() stops forcing payment_type back to
+--    'installment' on every call. Safe today only because every current
+--    caller already has payment_type = 'installment' before calling it
+--    -- but it would silently turn a rent contract back into an
+--    installment sale the first time someone clicked "Пересчитать
+--    график" on a lease.
+--
+-- 4. trg_auto_regenerate_schedule (055) reacts to payment_type = 'rent'
+--    too, not just 'installment' -- editing an active lease's amount
+--    should regenerate its schedule the same way editing a sale's does.
+--
+-- Идемпотентно, повторный запуск безопасен.
+-- ============================================================
+
+alter table crm.objects add column if not exists listing_type text not null default 'sale';
+alter table crm.objects drop constraint if exists objects_listing_type_check;
+alter table crm.objects add constraint objects_listing_type_check
+  check (listing_type in ('sale', 'rent'));
+
+create index if not exists objects_listing_type_idx on crm.objects (listing_type);
+
+create or replace function crm.recompute_object_status(p_object_id uuid)
+returns void
+language sql
+security definer
+set search_path = crm, public
+as $$
+  update crm.objects
+  set status = case
+    when exists (
+      select 1 from crm.contracts c
+      where c.object_id = p_object_id and c.status <> 'cancelled'
+        and c.paid_amount > 0 and c.payment_type = 'rent'
+    ) then 'rented'
+    when exists (
+      select 1 from crm.contracts c
+      where c.object_id = p_object_id and c.status <> 'cancelled' and c.paid_amount > 0
+    ) then 'sold'
+    when exists (
+      select 1 from crm.contracts c
+      where c.object_id = p_object_id and c.status <> 'cancelled'
+    ) then 'reserved'
+    else 'available'
+  end::crm.object_status
+  where id = p_object_id;
+$$;
+
+create or replace function crm.regenerate_schedule(
+  p_contract_id uuid,
+  p_months integer
+)
+returns integer
+language plpgsql
+security definer
+set search_path = crm, public
+as $$
+declare
+  v_contract crm.contracts;
+  v_remaining numeric;
+  v_base numeric;
+  v_amount numeric;
+  i integer;
+begin
+  if not crm.can_write() then
+    raise exception 'Read-only role';
+  end if;
+  if p_months is null or p_months < 1 then
+    raise exception 'Months must be at least 1';
+  end if;
+
+  select * into v_contract from crm.contracts where id = p_contract_id;
+  if not found then
+    raise exception 'Contract not found';
+  end if;
+
+  v_remaining := greatest(v_contract.amount - v_contract.paid_amount, 0);
+  if v_remaining <= 0 then
+    raise exception 'Nothing left to schedule';
+  end if;
+
+  -- Только план; фактические (оплаченные) строки неприкосновенны.
+  delete from crm.contract_payments
+  where contract_id = p_contract_id and paid = false;
+
+  v_base := floor(v_remaining / p_months * 100) / 100;
+  for i in 1..p_months loop
+    if i = p_months then
+      v_amount := round((v_remaining - v_base * (p_months - 1)) * 100) / 100;
+    else
+      v_amount := v_base;
+    end if;
+    insert into crm.contract_payments (contract_id, due_date, amount, paid, paid_date)
+    values (p_contract_id, (current_date + (i || ' month')::interval)::date, v_amount, false, null);
+  end loop;
+
+  -- payment_type is deliberately NOT touched here anymore -- see this
+  -- migration's header. installment_months is the only thing this
+  -- function's caller expects it to keep in sync.
+  update crm.contracts
+  set installment_months = p_months
+  where id = p_contract_id;
+
+  return p_months;
+end;
+$$;
+
+create or replace function crm.auto_regenerate_schedule()
+returns trigger
+language plpgsql
+security definer
+set search_path = crm, public
+as $$
+begin
+  if NEW.payment_type in ('installment', 'rent')
+     and NEW.installment_months is not null
+     and NEW.installment_months > 0
+     and NEW.amount is distinct from OLD.amount
+     and NEW.amount > NEW.paid_amount
+     and exists (
+       select 1 from crm.contract_payments
+       where contract_id = NEW.id and paid = false
+     )
+  then
+    perform crm.regenerate_schedule(NEW.id, NEW.installment_months);
+  end if;
+  return NEW;
+end;
+$$;
+
+-- ### 061_overdue_by_building_remaining.sql
+
+-- ============================================================
+-- 061: crm.overdue_by_building() also returns remaining_total.
+--
+-- The Debtors page's per-ЖК chart has always carried a caption saying
+-- "red = the overdue portion, grey = the whole remaining balance on those
+-- same contracts" -- but overdue_by_building() only ever returned
+-- total_overdue, so HBarChart drew a single red bar and the "grey" half of
+-- that promise never existed on screen. Reported back as "the charts make
+-- no sense": a bar ranked purely by overdue amount, with a caption
+-- describing a comparison that isn't there, reads as noise, not
+-- information. This adds the missing number so the chart can actually
+-- draw what the caption already claimed.
+--
+-- Mirrors exactly how crm.overdue_contracts()/overdue_totals() already
+-- compute remaining_total (earlier in this file): the whole unpaid
+-- balance of the contract (amount - paid_amount), not just its overdue
+-- slice. Grouped per building+currency here instead of per contract, via
+-- a small CTE so each contract's remaining is counted once even though
+-- overdue_installments can carry several unpaid rows for it.
+-- ============================================================
+
+drop function if exists crm.overdue_by_building();
+
+create function crm.overdue_by_building()
+returns table (
+  building_id uuid,
+  building_name text,
+  currency text,
+  contracts int,
+  total_overdue numeric,
+  remaining_total numeric
+)
+language sql
+stable
+security invoker
+set search_path = crm, public
+as $$
+  with base as (
+    select
+      o.building_id,
+      coalesce(b.name, '—') as building_name,
+      c.currency::text as currency,
+      c.id as contract_id,
+      oi.unpaid_amount,
+      c.amount,
+      c.paid_amount
+    from crm.overdue_installments oi
+    join crm.contracts c on c.id = oi.contract_id
+    left join crm.objects   o on o.id = c.object_id
+    left join crm.buildings b on b.id = o.building_id
+    where oi.due_date < current_date
+      and oi.unpaid_amount > 0.005
+  ),
+  per_contract as (
+    select distinct on (contract_id)
+      building_id, currency, contract_id, amount, paid_amount
+    from base
+  ),
+  remaining as (
+    select building_id, currency, sum(greatest(amount - paid_amount, 0)) as remaining_total
+    from per_contract
+    group by building_id, currency
+  )
+  select
+    b.building_id,
+    b.building_name,
+    b.currency,
+    (count(distinct b.contract_id))::int,
+    sum(b.unpaid_amount),
+    coalesce(r.remaining_total, 0)
+  from base b
+  left join remaining r
+    on r.building_id is not distinct from b.building_id
+   and r.currency = b.currency
+  group by b.building_id, b.building_name, b.currency, r.remaining_total
+  order by sum(b.unpaid_amount) desc;
+$$;
+
+grant execute on function crm.overdue_by_building() to authenticated;
+
+-- ### 062_dashboard_summary_period_scoping.sql
+
+-- ============================================================
+-- 062: paid/debt/top-debtors on the dashboard stop vanishing under
+--      "Сегодня"/"Этот месяц" -- they were being filtered by the
+--      contract's SIGN date, not by whether any money moved in the
+--      period.
+--
+-- ЧТО БЫЛО НЕ ТАК. money (paid/debt) and top_debtors were both computed
+-- from live_contracts, which restricts to contracts whose signed_date
+-- falls inside [p_from, p_to]. That's the right scope for a SALES metric
+-- ("how much did we sign this period") -- month_rev/day_rev/bld_rev
+-- legitimately want exactly that. It is the wrong scope for paid/debt/
+-- top_debtors: those are CURRENT-STATE totals (how much has been
+-- collected in total, how much is still owed in total, who owes the
+-- most right now), which have nothing to do with when a contract was
+-- SIGNED. A payment received today on a contract signed six months ago
+-- is real income today -- but with the "Сегодня" period picked, that
+-- contract falls outside [today, today] by signed_date, so its entire
+-- paid_amount (not just today's payment) silently dropped out of
+-- "Даромади умумӣ", its remaining balance dropped out of "Қарзи
+-- харидорон", and the client dropped out of "Бузургтарин қарздорон" --
+-- while the "Воридот аз рӯи рӯз" chart right above it (built from
+-- contract_payments.paid_date, not signed_date) correctly showed the
+-- same payment. Two panels on the same page, same underlying event,
+-- contradicting each other.
+--
+-- ЧТО МЕНЯЕТСЯ. A new CTE, live_state_contracts: scoped_contracts minus
+-- cancelled, WITHOUT the signed_date/period restriction live_contracts
+-- adds. money and debtors now read from it instead of live_contracts.
+-- Building scope (p_building_id) still applies to both, same as before
+-- -- only the period picker (p_from/p_to) stops touching them.
+-- month_rev, day_rev, bld_rev are untouched: revenue-over-time and
+-- revenue-by-building are genuinely period/sales metrics, and stay
+-- exactly as period-scoped as before.
+--
+-- Also closes a second, smaller inconsistency found while in here:
+-- day_rev joined scoped_contracts with no status filter at all, so a
+-- payment recorded against a contract that was LATER cancelled still
+-- counted in the daily chart, even though month_rev already excludes
+-- cancelled contracts from the equivalent monthly figure. day_rev's
+-- join now carries the same "status <> 'cancelled'" condition
+-- month_rev's does.
+--
+-- Idempotent, safe to run again.
+-- ============================================================
+
+create or replace function crm.dashboard_summary(
+  p_building_id uuid default null,
+  p_from date default null,
+  p_to date default null
+)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = crm, public
+as $$
+with
+scoped_objects as (
+  select o.id, o.status, o.building_id, o.price, o.currency, o.area
+  from crm.objects o
+  left join crm.buildings b on b.id = o.building_id
+  where case
+          when p_building_id is not null then o.building_id = p_building_id
+          else coalesce(b.construction_status, 'in_progress') <> 'completed'
+        end
+),
+scoped_contracts as (
+  select c.id, c.client_id, c.amount, c.paid_amount, c.currency,
+         c.signed_date, c.status, so.building_id
+  from crm.contracts c
+  join scoped_objects so on so.id = c.object_id
+),
+-- Every live (not cancelled) contract in scope, with NO date restriction.
+-- The one thing paid/debt/top_debtors actually want: today's, this
+-- month's and this year's totals are all the same number, because those
+-- three are a snapshot of current state, not a flow during the period.
+live_state_contracts as (
+  select *
+  from scoped_contracts
+  where status <> 'cancelled'
+),
+-- Same, but additionally restricted to contracts SIGNED inside the
+-- chosen period -- for the metrics that actually mean "sales this
+-- period" (month_rev, day_rev's contract lookup, bld_rev).
+live_contracts as (
+  select *
+  from live_state_contracts
+  where (p_from is null or (signed_date is not null and signed_date >= p_from))
+    and (p_to   is null or (signed_date is not null and signed_date <= p_to))
+),
+rel_buildings as (
+  select b.id, b.name
+  from crm.buildings b
+  where case
+          when p_building_id is not null then b.id = p_building_id
+          else b.construction_status <> 'completed'
+        end
+),
+obj_stats as (
+  select
+    (count(*))::int                                             as total,
+    (count(*) filter (where status = 'available'))::int         as available,
+    (count(*) filter (where status = 'reserved'))::int          as reserved,
+    (count(*) filter (where status = 'sold'))::int              as sold,
+    (count(*) filter (where status = 'in_progress'))::int       as in_progress,
+    coalesce(sum(area), 0)                                      as area_total,
+    coalesce(sum(area) filter (where status = 'available'), 0)   as area_available,
+    coalesce(sum(area) filter (where status = 'reserved'), 0)    as area_reserved,
+    coalesce(sum(area) filter (where status = 'sold'), 0)        as area_sold,
+    coalesce(sum(area) filter (where status = 'rented'), 0)      as area_rented,
+    coalesce(sum(area) filter (where status = 'in_progress'), 0) as area_in_progress,
+    coalesce(sum(price) filter (where status <> 'sold' and currency <> 'USD'), 0) as pot_tjs,
+    coalesce(sum(price) filter (where status <> 'sold' and currency  = 'USD'), 0) as pot_usd,
+    (count(*) filter (where status <> 'sold' and price is not null and price > 0))::int
+      as pot_units,
+    (count(*) filter (where status <> 'sold' and (price is null or price = 0)))::int
+      as pot_no_price
+  from scoped_objects
+),
+money as (
+  select
+    coalesce(sum(paid_amount) filter (where currency <> 'USD'), 0) as paid_tjs,
+    coalesce(sum(paid_amount) filter (where currency  = 'USD'), 0) as paid_usd,
+    coalesce(sum(greatest(amount - paid_amount, 0)) filter (where currency <> 'USD'), 0) as debt_tjs,
+    coalesce(sum(greatest(amount - paid_amount, 0)) filter (where currency  = 'USD'), 0) as debt_usd
+  from live_state_contracts
+),
+overdue as (
+  select
+    coalesce(sum(oi.unpaid_amount) filter (where c.currency <> 'USD'), 0) as tjs,
+    coalesce(sum(oi.unpaid_amount) filter (where c.currency  = 'USD'), 0) as usd,
+    (count(distinct c.id))::int                                          as contracts
+  from crm.overdue_installments oi
+  join scoped_contracts c on c.id = oi.contract_id
+  where oi.due_date < current_date
+    and oi.unpaid_amount > 0.005
+    and c.status <> 'cancelled'
+),
+-- The end of the window: the last month that actually has a signing, so the
+-- chart lands where the data is even if the newest contract is not this month.
+month_end as (
+  select coalesce(
+           date_trunc('month', max(signed_date)),
+           date_trunc('month', current_date)
+         ) as m
+  from scoped_contracts
+  where status <> 'cancelled' and signed_date is not null
+),
+-- Six consecutive calendar months. A month with no sales must be a zero on the
+-- axis, not a missing point.
+month_axis as (
+  select to_char(g, 'YYYY-MM') as month
+  from month_end me,
+       generate_series(me.m - interval '5 months', me.m, interval '1 month') as g
+),
+month_rev as (
+  select
+    ax.month,
+    coalesce(sum(c.amount) filter (where c.currency <> 'USD'), 0) as tjs,
+    coalesce(sum(c.amount) filter (where c.currency  = 'USD'), 0) as usd
+  from month_axis ax
+  left join scoped_contracts c
+         on c.status <> 'cancelled'
+        and c.signed_date is not null
+        and to_char(c.signed_date, 'YYYY-MM') = ax.month
+  group by ax.month
+  order by ax.month
+),
+-- Same treatment for the daily chart: every day in the chosen period appears,
+-- including the ones with no money received.
+day_axis as (
+  select g::date as day
+  from generate_series(
+         coalesce(p_from, current_date),
+         coalesce(p_to, current_date),
+         interval '1 day'
+       ) as g
+  where p_from is not null and p_to is not null
+),
+day_rev as (
+  select
+    ax.day,
+    coalesce(sum(p.amount) filter (where c.currency <> 'USD'), 0) as tjs,
+    coalesce(sum(p.amount) filter (where c.currency  = 'USD'), 0) as usd
+  from day_axis ax
+  left join crm.contract_payments p
+         on p.paid and p.paid_date = ax.day
+  left join scoped_contracts c
+         on c.id = p.contract_id
+        and c.status <> 'cancelled'
+  group by ax.day
+  order by ax.day
+),
+occ as (
+  select
+    rb.id, rb.name,
+    (count(*))::int                                          as total,
+    (count(*) filter (where so.status = 'available'))::int    as available,
+    (count(*) filter (where so.status = 'reserved'))::int     as reserved,
+    (count(*) filter (where so.status = 'sold'))::int         as sold,
+    (count(*) filter (where so.status = 'rented'))::int       as rented,
+    (count(*) filter (where so.status = 'in_progress'))::int  as in_progress
+  from rel_buildings rb
+  join scoped_objects so on so.building_id = rb.id
+  group by rb.id, rb.name
+),
+bld_rev as (
+  select
+    rb.id, rb.name,
+    coalesce(sum(lc.amount) filter (where lc.currency <> 'USD'), 0) as tjs,
+    coalesce(sum(lc.amount) filter (where lc.currency  = 'USD'), 0) as usd
+  from rel_buildings rb
+  join live_contracts lc on lc.building_id = rb.id
+  group by rb.id, rb.name
+),
+debtors as (
+  select
+    lc.client_id,
+    cl.name,
+    lc.currency::text                       as currency,
+    sum(lc.amount - lc.paid_amount)         as remaining
+  from live_state_contracts lc
+  join crm.clients cl on cl.id = lc.client_id
+  where lc.amount - lc.paid_amount > 0
+  group by 1, 2, 3
+  order by 4 desc
+  limit 5
+),
+completed as (
+  select
+    (select count(*) from crm.buildings where construction_status = 'completed')::int as buildings,
+    (select count(*)
+       from crm.objects o
+       join crm.buildings b on b.id = o.building_id
+      where b.construction_status = 'completed')::int as units
+)
+select jsonb_build_object(
+  'counts', (
+    select jsonb_build_object(
+      'total', total, 'available', available, 'reserved', reserved,
+      'sold', sold, 'in_progress', in_progress
+    ) from obj_stats
+  ),
+  'area', (select jsonb_build_object('total', area_total, 'available', area_available) from obj_stats),
+  'area_split', (
+    select jsonb_build_object(
+      'sold', area_sold, 'reserved', area_reserved, 'available', area_available,
+      'rented', area_rented, 'in_progress', area_in_progress
+    ) from obj_stats
+  ),
+  'potential', (select jsonb_build_object('tjs', pot_tjs, 'usd', pot_usd) from obj_stats),
+  'potential_units', (select pot_units from obj_stats),
+  'potential_no_price', (select pot_no_price from obj_stats),
+  'paid', (select jsonb_build_object('tjs', paid_tjs, 'usd', paid_usd) from money),
+  'debt', (select jsonb_build_object('tjs', debt_tjs, 'usd', debt_usd) from money),
+  'overdue', (select jsonb_build_object('tjs', tjs, 'usd', usd) from overdue),
+  'overdue_contracts', (select contracts from overdue),
+  'revenue_months', coalesce((
+    select jsonb_agg(jsonb_build_object('month', month, 'tjs', tjs, 'usd', usd) order by month)
+    from month_rev
+  ), '[]'::jsonb),
+  'revenue_days', coalesce((
+    select jsonb_agg(jsonb_build_object('day', day, 'tjs', tjs, 'usd', usd) order by day)
+    from day_rev
+  ), '[]'::jsonb),
+  'occupancy', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', id, 'name', name, 'total', total,
+      'available', available, 'reserved', reserved, 'sold', sold,
+      'rented', rented, 'in_progress', in_progress
+    ) order by name)
+    from occ
+  ), '[]'::jsonb),
+  'revenue_by_building', coalesce((
+    select jsonb_agg(jsonb_build_object('id', id, 'name', name, 'tjs', tjs, 'usd', usd)
+                     order by (tjs + usd) desc)
+    from bld_rev where tjs > 0 or usd > 0
+  ), '[]'::jsonb),
+  'top_debtors', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'client_id', client_id, 'name', name, 'currency', currency, 'remaining', remaining
+    ) order by remaining desc)
+    from debtors
+  ), '[]'::jsonb),
+  'completed', (select jsonb_build_object('buildings', buildings, 'units', units) from completed)
+);
+$$;
+
+grant execute on function crm.dashboard_summary(uuid, date, date) to authenticated;
+
+-- ### 063_sms_broadcast_recipients.sql
+
+-- ============================================================
+-- 063: crm.sms_broadcast_recipients() -- who a custom SMS broadcast
+--      reaches, for one of three audiences.
+--
+-- Backs the "Своя рассылка" feature in Settings → SMS: an admin writes
+-- their own text (not one of the two fixed payment-reminder templates)
+-- and sends it to either every client, everyone with a contract in one
+-- chosen building, or everyone currently overdue -- the exact scenario
+-- that prompted this ("дом сдан, приходите за ключами" needs every
+-- buyer in THAT building, not a payment reminder).
+--
+-- One function for all three audiences rather than three separate
+-- queries (one in SQL, two hand-rolled in JS) so the definition of
+-- "a client with a live contract" and "a client who's overdue" only
+-- exists once, in the same place overdue_contracts()/dashboard_summary()
+-- already define it. security invoker + granted to authenticated, same
+-- as those two: RLS still applies, so a scoped manager (if ever given
+-- access to this feature) would only ever see their own clients.
+--
+-- distinct on (cl.id): a client with two contracts in the audience
+-- must appear once, not once per contract -- otherwise they'd get the
+-- same SMS twice.
+-- ============================================================
+
+create or replace function crm.sms_broadcast_recipients(
+  p_audience text,             -- 'all' | 'building' | 'debtors'
+  p_building_id uuid default null
+)
+returns table (
+  client_id uuid,
+  name text,
+  phone text,
+  phone2 text
+)
+language sql
+stable
+security invoker
+set search_path = crm, public
+as $$
+  with base as (
+    select distinct on (cl.id)
+      cl.id as client_id,
+      cl.name,
+      cl.phone,
+      cl.phone2
+    from crm.contracts c
+    join crm.clients cl on cl.id = c.client_id
+    left join crm.objects o on o.id = c.object_id
+    where c.status <> 'cancelled'
+      and (p_audience <> 'building' or o.building_id = p_building_id)
+      and (
+        p_audience <> 'debtors'
+        or exists (
+          select 1
+          from crm.overdue_installments oi
+          where oi.contract_id = c.id
+            and oi.due_date < current_date
+            and oi.unpaid_amount > 0.005
+        )
+      )
+    order by cl.id
+  )
+  select client_id, name, phone, phone2
+  from base
+  order by name;
+$$;
+
+grant execute on function crm.sms_broadcast_recipients(text, uuid) to authenticated;
